@@ -4,6 +4,9 @@ A Python script that scans a project folder, categorizes every file, flags poten
 issues, and generates a clean Markdown and/or HTML report with summary stats and
 recommendations.
 
+## Live Demo
+[View the sample report](https://greatepee.github.io/file_organizer/)
+
 ## Features
 
 - **Categorizes files** into Images, PDFs, Documents, Spreadsheets, Presentations,

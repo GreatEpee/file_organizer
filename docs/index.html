@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>File Inventory Report</title><style>
+:root { --bg:#f7f7f8; --card:#fff; --text:#1d1d1f; --muted:#6b6b70; --line:#e3e3e6;
+        --accent:#2f6fed; --warn:#c2410c; --ok:#15803d; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#141416; --card:#1e1e21; --text:#ececef; --muted:#9a9aa2; --line:#2e2e33;
+          --accent:#6b9bff; --warn:#fb923c; --ok:#4ade80; } }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       background:var(--bg); color:var(--text); line-height:1.5; }
+main { max-width:1000px; margin:0 auto; padding:32px 20px; }
+h1 { margin:0 0 4px; } h2 { margin-top:36px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+.meta { color:var(--muted); margin-bottom:24px; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+.card .n { font-size:1.6rem; font-weight:700; } .card .l { color:var(--muted); font-size:.85rem; }
+.card.warn .n { color:var(--warn); } .card.ok .n { color:var(--ok); }
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; background:var(--card); border-radius:8px; overflow:hidden; }
+th,td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; font-size:.92rem; }
+th { background:var(--line); } td.r, th.r { text-align:right; }
+code { font-family:ui-monospace,Consolas,monospace; font-size:.88em; }
+.bar { height:8px; background:var(--accent); border-radius:4px; }
+li { margin:4px 0; } .none { color:var(--ok); }
+</style></head><body><main>
+<h1>File &amp; Asset Inventory Report</h1>
+<div class='meta'>Folder: <code>D:\file_organizer\sample_project</code> &middot; Generated 2026-11-02 23:28</div>
+<div class='cards'>
+<div class="card "><div class="n">17</div><div class="l">Total files</div></div>
+<div class="card "><div class="n">12.1 MB</div><div class="l">Total size</div></div>
+<div class="card "><div class="n">7</div><div class="l">Categories</div></div>
+<div class="card warn"><div class="n">2</div><div class="l">Duplicate groups</div></div>
+<div class="card warn"><div class="n">1</div><div class="l">Oversized (&gt; 10 MB)</div></div>
+<div class="card warn"><div class="n">1</div><div class="l">Empty files</div></div>
+</div>
+<h2>Files by Category</h2><div class='table-wrap'><table><tr><th>Category</th><th class='r'>Files</th><th class='r'>Size</th><th>Share</th></tr>
+<tr><td>Images</td><td class='r'>5</td><td class='r'>12.1 MB</td><td><div class='bar' style='width:29%'></div> 29%</td></tr>
+<tr><td>Documents</td><td class='r'>4</td><td class='r'>1.1 KB</td><td><div class='bar' style='width:24%'></div> 24%</td></tr>
+<tr><td>Spreadsheets</td><td class='r'>2</td><td class='r'>1.6 KB</td><td><div class='bar' style='width:12%'></div> 12%</td></tr>
+<tr><td>PDFs</td><td class='r'>2</td><td class='r'>1.2 KB</td><td><div class='bar' style='width:12%'></div> 12%</td></tr>
+<tr><td>Other</td><td class='r'>2</td><td class='r'>62 B</td><td><div class='bar' style='width:12%'></div> 12%</td></tr>
+<tr><td>Archives</td><td class='r'>1</td><td class='r'>487 B</td><td><div class='bar' style='width:6%'></div> 6%</td></tr>
+<tr><td>Code</td><td class='r'>1</td><td class='r'>29 B</td><td><div class='bar' style='width:6%'></div> 6%</td></tr>
+</table></div>
+<h2>Issues</h2><h3>Duplicates</h3>
+<ul><li>600 B each: <code>docs/contract.pdf</code>, <code>docs/contract_final.pdf</code></li><li>659 B each: <code>images/logo.png</code>, <code>images/logo_copy.png</code></li></ul>
+<h3>Oversized Files</h3>
+<ul><li><code>images/hero_raw.png</code> (12.1 MB)</li></ul>
+<h3>Empty Files</h3>
+<ul><li><code>docs/empty_draft.txt</code></li></ul>
+<h3>Unknown File Types</h3>
+<ul><li><code>misc/LICENSE</code> (extension: (none))</li><li><code>misc/export.dat</code> (extension: .dat)</li></ul>
+<h3>Missing Common Asset Types</h3>
+<ul><li>Presentations</li></ul>
+<h2>Recommendations</h2><ol><li>Remove duplicate copies: 2 group(s) of identical files are wasting 1.2 KB. Keep one copy of each.</li><li>Compress or archive 1 file(s) larger than 10 MB (e.g. resize images, export lighter PDFs, or move raw files to cloud storage).</li><li>Delete or fill in 1 empty file(s); they are usually leftovers.</li><li>Check whether these common asset types should exist in the project: Presentations.</li><li>Review 2 file(s) with unknown or missing extensions and rename or remove them.</li><li>Move 1 loose file(s) from the root folder into sub-folders (e.g. images/, docs/) to keep the project tidy.</li></ol>
+<h2>Full Inventory</h2>
+<h3>Images (5)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>screenshot.png</code></td><td>.png</td><td class='r'>1020 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>images/banner.jpg</code></td><td>.jpg</td><td class='r'>653 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>images/hero_raw.png</code></td><td>.png</td><td class='r'>12.1 MB</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>images/logo.png</code></td><td>.png</td><td class='r'>659 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>images/logo_copy.png</code></td><td>.png</td><td class='r'>659 B</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+<h3>Documents (4)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>docs/empty_draft.txt</code></td><td>.txt</td><td class='r'>0 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>docs/meeting_notes.md</code></td><td>.md</td><td class='r'>65 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>docs/project_brief.txt</code></td><td>.txt</td><td class='r'>51 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>docs/proposal.docx</code></td><td>.docx</td><td class='r'>974 B</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+<h3>Spreadsheets (2)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>data/budget.csv</code></td><td>.csv</td><td class='r'>41 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>data/sales_2026.xlsx</code></td><td>.xlsx</td><td class='r'>1.6 KB</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+<h3>PDFs (2)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>docs/contract.pdf</code></td><td>.pdf</td><td class='r'>600 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>docs/contract_final.pdf</code></td><td>.pdf</td><td class='r'>600 B</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+<h3>Other (2)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>misc/LICENSE</code></td><td>(none)</td><td class='r'>12 B</td><td>2026-11-02 23:28</td></tr>
+<tr><td><code>misc/export.dat</code></td><td>.dat</td><td class='r'>50 B</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+<h3>Archives (1)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>misc/old_assets.zip</code></td><td>.zip</td><td class='r'>487 B</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+<h3>Code (1)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
+<tr><td><code>scripts/build.py</code></td><td>.py</td><td class='r'>29 B</td><td>2026-11-02 23:28</td></tr>
+</table></div>
+</main></body></html>

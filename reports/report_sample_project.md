@@ -1,16 +1,16 @@
 # File & Asset Inventory Report
 
 **Folder:** `D:\file_organizer\sample_project`  
-**Generated:** 2026-11-02 22:49
+**Generated:** 2026-11-03 01:58
 
 ## Summary
 
 | Metric | Value |
 |---|---|
 | Total files | 17 |
-| Total size | 12.0 MB |
+| Total size | 12.1 MB |
 | Categories found | 7 |
-| Duplicate groups | 2 (288 B wasted) |
+| Duplicate groups | 2 (1.2 KB wasted) |
 | Oversized files (> 10 MB) | 1 |
 | Empty files | 1 |
 | Missing asset types | Presentations |
@@ -19,22 +19,22 @@
 
 | Category | Files | Size | Share |
 |---|---:|---:|---:|
-| Images | 5 | 12.0 MB | 29% |
-| Documents | 4 | 1.6 KB | 24% |
-| Spreadsheets | 2 | 2.4 KB | 12% |
-| PDFs | 2 | 436 B | 12% |
-| Other | 2 | 312 B | 12% |
-| Archives | 1 | 135 B | 6% |
+| Images | 5 | 12.1 MB | 29% |
+| Documents | 4 | 1.1 KB | 24% |
+| Spreadsheets | 2 | 1.6 KB | 12% |
+| PDFs | 2 | 1.2 KB | 12% |
+| Other | 2 | 62 B | 12% |
+| Archives | 1 | 487 B | 6% |
 | Code | 1 | 29 B | 6% |
 
 ## Issues
 
 ### Duplicates
-- **Group 1** (218 B each): `docs/contract.pdf`, `docs/contract_final.pdf`
-- **Group 2** (70 B each): `images/logo.png`, `images/logo_copy.png`
+- **Group 1** (600 B each): `docs/contract.pdf`, `docs/contract_final.pdf`
+- **Group 2** (659 B each): `images/logo.png`, `images/logo_copy.png`
 
 ### Oversized Files
-- `images/hero_raw.jpg` (12.0 MB)
+- `images/hero_raw.png` (12.1 MB)
 
 ### Empty Files
 - `docs/empty_draft.txt`
@@ -48,7 +48,7 @@
 
 ## Recommendations
 
-1. Remove duplicate copies: 2 group(s) of identical files are wasting 288 B. Keep one copy of each.
+1. Remove duplicate copies: 2 group(s) of identical files are wasting 1.2 KB. Keep one copy of each.
 2. Compress or archive 1 file(s) larger than 10 MB (e.g. resize images, export lighter PDFs, or move raw files to cloud storage).
 3. Delete or fill in 1 empty file(s); they are usually leftovers.
 4. Check whether these common asset types should exist in the project: Presentations.
@@ -59,11 +59,11 @@
 
 | File | Size |
 |---|---:|
-| `images/hero_raw.jpg` | 12.0 MB |
-| `images/banner.jpg` | 2.9 KB |
-| `data/sales_2026.xlsx` | 2.3 KB |
-| `docs/proposal.docx` | 1.5 KB |
-| `misc/export.dat` | 300 B |
+| `images/hero_raw.png` | 12.1 MB |
+| `data/sales_2026.xlsx` | 1.6 KB |
+| `screenshot.png` | 1020 B |
+| `docs/proposal.docx` | 974 B |
+| `images/logo.png` | 659 B |
 
 ## Full Inventory
 
@@ -71,50 +71,50 @@
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `screenshot.png` | .png | 71 B | 2026-11-02 22:48 |
-| `images/banner.jpg` | .jpg | 2.9 KB | 2026-11-02 22:48 |
-| `images/hero_raw.jpg` | .jpg | 12.0 MB | 2026-11-02 22:48 |
-| `images/logo.png` | .png | 70 B | 2026-11-02 22:48 |
-| `images/logo_copy.png` | .png | 70 B | 2026-11-02 22:48 |
+| `screenshot.png` | .png | 1020 B | 2026-11-03 01:58 |
+| `images/banner.jpg` | .jpg | 653 B | 2026-11-03 01:58 |
+| `images/hero_raw.png` | .png | 12.1 MB | 2026-11-03 01:58 |
+| `images/logo.png` | .png | 659 B | 2026-11-03 01:58 |
+| `images/logo_copy.png` | .png | 659 B | 2026-11-03 01:58 |
 
 ### Documents (4)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `docs/empty_draft.txt` | .txt | 0 B | 2026-11-02 22:48 |
-| `docs/meeting_notes.md` | .md | 65 B | 2026-11-02 22:48 |
-| `docs/project_brief.txt` | .txt | 51 B | 2026-11-02 22:48 |
-| `docs/proposal.docx` | .docx | 1.5 KB | 2026-11-02 22:48 |
+| `docs/empty_draft.txt` | .txt | 0 B | 2026-11-03 01:58 |
+| `docs/meeting_notes.md` | .md | 65 B | 2026-11-03 01:58 |
+| `docs/project_brief.txt` | .txt | 51 B | 2026-11-03 01:58 |
+| `docs/proposal.docx` | .docx | 974 B | 2026-11-03 01:58 |
 
 ### Spreadsheets (2)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `data/budget.csv` | .csv | 41 B | 2026-11-02 22:48 |
-| `data/sales_2026.xlsx` | .xlsx | 2.3 KB | 2026-11-02 22:48 |
+| `data/budget.csv` | .csv | 41 B | 2026-11-03 01:58 |
+| `data/sales_2026.xlsx` | .xlsx | 1.6 KB | 2026-11-03 01:58 |
 
 ### PDFs (2)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `docs/contract.pdf` | .pdf | 218 B | 2026-11-02 22:48 |
-| `docs/contract_final.pdf` | .pdf | 218 B | 2026-11-02 22:48 |
+| `docs/contract.pdf` | .pdf | 600 B | 2026-11-03 01:58 |
+| `docs/contract_final.pdf` | .pdf | 600 B | 2026-11-03 01:58 |
 
 ### Other (2)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `misc/LICENSE` | (none) | 12 B | 2026-11-02 22:48 |
-| `misc/export.dat` | .dat | 300 B | 2026-11-02 22:48 |
+| `misc/LICENSE` | (none) | 12 B | 2026-11-03 01:58 |
+| `misc/export.dat` | .dat | 50 B | 2026-11-03 01:58 |
 
 ### Archives (1)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `misc/old_assets.zip` | .zip | 135 B | 2026-11-02 22:48 |
+| `misc/old_assets.zip` | .zip | 487 B | 2026-11-03 01:58 |
 
 ### Code (1)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `scripts/build.py` | .py | 29 B | 2026-11-02 22:48 |
+| `scripts/build.py` | .py | 29 B | 2026-11-03 01:58 |

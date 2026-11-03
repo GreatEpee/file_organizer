@@ -35,6 +35,10 @@ recommendations.
 file-organizer/
 ├── organizer.py              # scanning, analysis and report logic (command line)
 ├── app.py                    # desktop app (window with buttons)
+├── tests/
+│   └── test_organizer.py     # automated tests (pytest)
+├── pytest.ini                # pytest settings
+├── requirements-dev.txt      # tools needed for development (pytest)
 ├── create_sample_folder.py   # builds a test folder with mixed files
 ├── README.md
 ├── reports/                  # generated reports go here
@@ -129,6 +133,17 @@ picker window (or run `python organizer.py sample_project`).
 | Unknown types | `misc/LICENSE`, `misc/export.dat` |
 | Missing asset type | No presentations included |
 | Loose root file | `screenshot.png` |
+
+## Running the Tests
+
+The project has automated tests that check the scanning, duplicate detection, size
+checks, skipped files, report generation and the sample folder results.
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest
+```
+All tests should pass. Add `-v` to see each test by name.
 
 ## Customizing
 

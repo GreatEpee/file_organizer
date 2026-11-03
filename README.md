@@ -4,9 +4,6 @@ A Python script that scans a project folder, categorizes every file, flags poten
 issues, and generates a clean Markdown and/or HTML report with summary stats and
 recommendations.
 
-## Live Demo
-[View the sample report](https://greatepee.github.io/file_organizer/)
-
 ## Features
 
 - **Categorizes files** into Images, PDFs, Documents, Spreadsheets, Presentations,
@@ -18,6 +15,8 @@ recommendations.
   - Files with unknown or missing extensions
   - Missing common asset types (Images, PDFs, Documents, Spreadsheets, Presentations)
   - Loose files sitting in the root folder
+  - Unreadable files and folders (no permission, locked, broken links), listed in a
+    "Skipped Files" section instead of being silently ignored
 - **Generates reports** in Markdown, HTML (supports light and dark mode), or both.
 - No external libraries needed. Uses only the Python standard library.
 
@@ -84,13 +83,16 @@ python organizer.py sample_project --format html --max-size 5
 
 ## What the Sample Folder Tests
 
+Every sample file is a real, valid file (images, PDF, Word, Excel, zip), so they all
+open normally in their usual apps.
+
 To test, run `python organizer.py` and select the `sample_project` folder in the
 picker window (or run `python organizer.py sample_project`).
 
 | Test case | File(s) |
 |---|---|
 | Duplicates | `logo.png` / `logo_copy.png`, `contract.pdf` / `contract_final.pdf` |
-| Oversized file | `images/hero_raw.jpg` (12 MB) |
+| Oversized file | `images/hero_raw.png` (about 11.5 MB) |
 | Empty file | `docs/empty_draft.txt` |
 | Unknown types | `misc/LICENSE`, `misc/export.dat` |
 | Missing asset type | No presentations included |

@@ -1,7 +1,7 @@
 # File & Asset Inventory Report
 
 **Folder:** `D:\file_organizer\sample_project`  
-**Generated:** 2026-11-03 01:58
+**Generated:** 2026-11-03 17:34
 
 ## Summary
 
@@ -13,6 +13,7 @@
 | Duplicate groups | 2 (1.2 KB wasted) |
 | Oversized files (> 10 MB) | 1 |
 | Empty files | 1 |
+| Skipped (unreadable) | 0 |
 | Missing asset types | Presentations |
 
 ## Files by Category
@@ -45,6 +46,9 @@
 
 ### Missing Common Asset Types
 - Presentations
+
+### Skipped Files
+- None, every file was read successfully
 
 ## Recommendations
 

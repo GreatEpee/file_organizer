@@ -35,6 +35,7 @@ IGNORE_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 # Build a quick lookup: extension -> category
 EXT_TO_CATEGORY = {ext: cat for cat, exts in CATEGORIES.items() for ext in exts}
 
+
 # Helpers
 
 def human_size(num_bytes):
@@ -60,14 +61,38 @@ def file_hash(path, chunk_size=1024 * 1024):
     return sha.hexdigest()
 
 
+def describe_error(err):
+    """Turn an OS error into a short reason a normal user can understand."""
+    if isinstance(err, PermissionError):
+        return "Permission denied (no access, or in use by another program)"
+    if isinstance(err, FileNotFoundError):
+        return "Not found (broken shortcut or link, or deleted during the scan)"
+    return err.strerror or str(err)
+
+
+def skipped_entry(rel, kind, err, note=""):
+    """Build one record for the 'Skipped' section of the report."""
+    return {"rel": rel, "kind": kind, "reason": describe_error(err) + note}
+
+
 # Scanning and analysis
 
 def scan_folder(root, skip_paths=()):
-    """Walk the folder and collect info about every file."""
+    """Walk the folder and collect info about every file.
+    Returns (files, skipped): skipped lists every file or folder that couldn't be read."""
     files = []
+    skipped = []
     skip = {Path(p).resolve() for p in skip_paths}
 
-    for dirpath, dirnames, filenames in os.walk(root):
+    def on_folder_error(err):
+        # os.walk calls this when it can't open a folder (e.g. no permission)
+        try:
+            rel = Path(err.filename).relative_to(root).as_posix()
+        except (TypeError, ValueError):
+            rel = str(err.filename)
+        skipped.append(skipped_entry(rel, "Folder", err, " - nothing inside it was scanned"))
+
+    for dirpath, dirnames, filenames in os.walk(root, onerror=on_folder_error):
         # Prune ignored folders in place so os.walk doesn't enter them
         dirnames[:] = sorted(d for d in dirnames if d not in IGNORE_DIRS)
         for name in sorted(filenames):
@@ -78,8 +103,10 @@ def scan_folder(root, skip_paths=()):
                 continue
             try:
                 stat = full.stat()
-            except OSError:
-                continue  # unreadable file, skip it
+            except OSError as err:
+                # Unreadable file: record it instead of hiding it
+                skipped.append(skipped_entry(full.relative_to(root).as_posix(), "File", err))
+                continue
             files.append({
                 "path": full,
                 "rel": full.relative_to(root).as_posix(),
@@ -89,11 +116,13 @@ def scan_folder(root, skip_paths=()):
                 "modified": datetime.fromtimestamp(stat.st_mtime),
                 "category": categorize(full),
             })
-    return files
+    return files, skipped
 
 
 def find_duplicates(files):
-    """Group identical files. Compare sizes first, then hash only size matches."""
+    """Group identical files. Compare sizes first, then hash only size matches.
+    Returns (duplicate_groups, skipped): skipped lists files that couldn't be opened."""
+    skipped = []
     by_size = defaultdict(list)
     for f in files:
         if f["size"] > 0:
@@ -106,19 +135,20 @@ def find_duplicates(files):
         for f in same_size:
             try:
                 by_hash[file_hash(f["path"])].append(f)
-            except OSError:
-                pass
-    return [group for group in by_hash.values() if len(group) > 1]
+            except OSError as err:
+                # File is listed in the inventory, but couldn't be opened to compare contents
+                skipped.append(skipped_entry(f["rel"], "File", err, " - not checked for duplicates"))
+    return [group for group in by_hash.values() if len(group) > 1], skipped
 
 
-def analyze(files, max_size_mb):
+def analyze(files, skipped, max_size_mb):
     """Compute stats and issues from the scanned file list."""
     by_category = defaultdict(list)
     for f in files:
         by_category[f["category"]].append(f)
 
     max_bytes = max_size_mb * 1024 * 1024
-    duplicates = find_duplicates(files)
+    duplicates, hash_skipped = find_duplicates(files)
     wasted = sum(g[0]["size"] * (len(g) - 1) for g in duplicates)
 
     return {
@@ -132,6 +162,7 @@ def analyze(files, max_size_mb):
         "missing": [c for c in EXPECTED_CATEGORIES if c not in by_category],
         "unknown": by_category.get("Other", []),
         "largest": sorted(files, key=lambda f: -f["size"])[:5],
+        "skipped": skipped + hash_skipped,
         "max_size_mb": max_size_mb,
     }
 
@@ -139,6 +170,9 @@ def analyze(files, max_size_mb):
 def build_recommendations(a):
     """Turn the analysis into a list of plain-English recommendations."""
     recs = []
+    if a["skipped"]:
+        recs.append(f"{len(a['skipped'])} item(s) could not be read, so parts of this report may be "
+                    "incomplete. Check their permissions or close any program using them, then scan again.")
     if a["duplicates"]:
         recs.append(f"Remove duplicate copies: {len(a['duplicates'])} group(s) of identical files "
                     f"are wasting {human_size(a['wasted_bytes'])}. Keep one copy of each.")
@@ -187,6 +221,7 @@ def render_markdown(root, a, recs):
     add(f"| Duplicate groups | {len(a['duplicates'])} ({human_size(a['wasted_bytes'])} wasted) |")
     add(f"| Oversized files (> {a['max_size_mb']} MB) | {len(a['oversized'])} |")
     add(f"| Empty files | {len(a['empty'])} |")
+    add(f"| Skipped (unreadable) | {len(a['skipped'])} |")
     add(f"| Missing asset types | {', '.join(a['missing']) or 'None'} |\n")
 
     add("## Files by Category\n")
@@ -216,6 +251,9 @@ def render_markdown(root, a, recs):
     add("\n".join(f"- `{f['rel']}` (extension: {f['ext']})" for f in a["unknown"]) or "- None found")
     add("\n### Missing Common Asset Types")
     add("\n".join(f"- {c}" for c in a["missing"]) or "- None, all expected types are present")
+    add("\n### Skipped Files")
+    add("\n".join(f"- `{x['rel']}` ({x['kind']}): {x['reason']}" for x in a["skipped"])
+        or "- None, every file was read successfully")
     add("")
 
     add("## Recommendations\n")
@@ -295,6 +333,7 @@ def render_html(root, a, recs):
     card("Duplicate groups", len(a["duplicates"]), "warn" if a["duplicates"] else "ok")
     card(f"Oversized (> {a['max_size_mb']} MB)", len(a["oversized"]), "warn" if a["oversized"] else "ok")
     card("Empty files", len(a["empty"]), "warn" if a["empty"] else "ok")
+    card("Skipped (unreadable)", len(a["skipped"]), "warn" if a["skipped"] else "ok")
     add("</div>")
 
     add("<h2>Files by Category</h2><div class='table-wrap'><table>"
@@ -317,6 +356,8 @@ def render_html(root, a, recs):
     add(file_list(a["unknown"], lambda f: f"<code>{e(f['rel'])}</code> (extension: {e(f['ext'])})"))
     add("<h3>Missing Common Asset Types</h3>")
     add(file_list(a["missing"], e))
+    add("<h3>Skipped Files</h3>")
+    add(file_list(a["skipped"], lambda x: f"<code>{e(x['rel'])}</code> ({e(x['kind'])}): {e(x['reason'])}"))
 
     add("<h2>Recommendations</h2><ol>" + "".join(f"<li>{e(r)}</li>" for r in recs) + "</ol>")
 
@@ -373,8 +414,8 @@ def run_report(folder, fmt, output_name, max_size):
     outputs = [Path(f"{output_name}.{f}") for f in formats]
 
     print(f"\nScanning {root} ...")
-    files = scan_folder(root, skip_paths=outputs)  # don't count our own report
-    analysis = analyze(files, max_size)
+    files, skipped = scan_folder(root, skip_paths=outputs)  # don't count our own report
+    analysis = analyze(files, skipped, max_size)
     recs = build_recommendations(analysis)
 
     for f, out in zip(formats, outputs):
@@ -384,7 +425,7 @@ def run_report(folder, fmt, output_name, max_size):
 
     print(f"\n{analysis['total_files']} files, {human_size(analysis['total_size'])} | "
           f"{len(analysis['duplicates'])} duplicate group(s), {len(analysis['oversized'])} oversized, "
-          f"{len(analysis['empty'])} empty, missing: {', '.join(analysis['missing']) or 'none'}")
+          f"{len(analysis['empty'])} empty, {len(analysis['skipped'])} skipped, missing: {', '.join(analysis['missing']) or 'none'}")
     return True
 
 

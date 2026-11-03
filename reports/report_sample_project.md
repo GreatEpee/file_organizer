@@ -1,13 +1,13 @@
 # File & Asset Inventory Report
 
 **Folder:** `D:\file_organizer\sample_project`  
-**Generated:** 2026-11-03 17:34
+**Generated:** 2026-11-03 17:40
 
 ## Summary
 
 | Metric | Value |
 |---|---|
-| Total files | 17 |
+| Files scanned | 17 |
 | Total size | 12.1 MB |
 | Categories found | 7 |
 | Duplicate groups | 2 (1.2 KB wasted) |

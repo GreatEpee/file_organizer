@@ -215,7 +215,7 @@ def render_markdown(root, a, recs):
 
     add("## Summary\n")
     add("| Metric | Value |\n|---|---|")
-    add(f"| Total files | {a['total_files']} |")
+    add(f"| Files scanned | {a['total_files']} |")
     add(f"| Total size | {human_size(a['total_size'])} |")
     add(f"| Categories found | {len(a['by_category'])} |")
     add(f"| Duplicate groups | {len(a['duplicates'])} ({human_size(a['wasted_bytes'])} wasted) |")
@@ -327,7 +327,7 @@ def render_html(root, a, recs):
         f"Generated {datetime.now():%Y-%m-%d %H:%M}</div>")
 
     add("<div class='cards'>")
-    card("Total files", a["total_files"])
+    card("Files scanned", a["total_files"])
     card("Total size", human_size(a["total_size"]))
     card("Categories", len(a["by_category"]))
     card("Duplicate groups", len(a["duplicates"]), "warn" if a["duplicates"] else "ok")

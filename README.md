@@ -1,8 +1,23 @@
-# File & Asset Organizer + Report Generator
+<h1 align="center">File & Asset Organizer + Report Generator</h1>
 
 A Python script that scans a project folder, categorizes every file, flags potential
 issues, and generates a clean Markdown and/or HTML report with summary stats and
 recommendations.
+
+<p align="center">
+  <a href="docs/demo.mp4">
+    <img src="docs/poster.jpg" alt="Watch the demo video" width="720">
+  </a>
+</p>
+
+<p align="center">
+  <img src="docs/demo.gif" alt="File Organizer demo" width="720">
+</p>
+
+<p align="center">
+  <a href="docs/demo.mp4">Watch the full video</a>
+</p>
+
 
 ## Live Demo
 [View the sample report](https://greatepee.github.io/file_organizer/)

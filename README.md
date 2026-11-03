@@ -18,9 +18,20 @@ recommendations.
   <a href="docs/demo.mp4">Watch the full video</a>
 </p>
 
+**Don't want to install Python?** Download `FileOrganizer.exe` from the
+[latest release](https://github.com/GreatEpee/file_organizer/releases/latest) and double-click it.
 
 ## Live Demo
-[View the sample report](https://greatepee.github.io/file_organizer/)
+
+[View the sample report](https://greatepee.github.io/file_organizer/) (generated from the sample folder in this repo)
+
+<p align="center">
+  <a href="https://greatepee.github.io/file_organizer/">
+    <img src="docs/screenshots/05-report.png" width="720" alt="The HTML report">
+  </a>
+  <br>
+  <sub>The HTML report: summary cards, a table per category and every issue listed. Light and dark mode are supported.</sub>
+</p>
 
 ## Features
 
@@ -39,11 +50,13 @@ recommendations.
   - Confusing file names: copies (`logo_copy.png`, `Report (2).pdf`), messy versions
     (`final_FINAL_v2.docx`), leftover temporary files (`~$report.docx`, `.bak`), extra
     spaces and very long names
+- **Search and filters** in the desktop app: narrow the issues by type or search text, sort
+  any column, and open a file's folder with a double-click. Built for large folders.
 - **Generates reports** in Markdown, HTML (supports light and dark mode) and CSV.
   The CSV has one row per file with all its issues, ready to sort and filter in Excel.
 - **Organize mode** that fixes problems for you: removes duplicate copies, removes empty
-  files and moves loose files into folders. It shows a preview first, never deletes
-  anything permanently, and can undo everything.
+  files and moves loose files into folders. It shows a preview with a tick box on every
+  change, never deletes anything permanently, and can undo everything.
 - **Desktop app** with buttons, a results table and one-click report opening,
   which can be packaged as a double-click `.exe`.
 - No external libraries needed. Uses only the Python standard library.
@@ -58,10 +71,14 @@ recommendations.
 file-organizer/
 ├── organizer.py              # scanning, analysis and report logic (command line)
 ├── organize.py               # organize mode: plan, apply and undo fixes
+├── issues.py                 # rows, search, filters and sorting for the Issues table
 ├── app.py                    # desktop app (window with buttons)
 ├── tests/
 │   ├── test_organizer.py     # tests for scanning, checks and reports
-│   └── test_organize.py      # tests for organize mode and undo
+│   ├── test_organize.py      # tests for organize mode, undo and the backup
+│   └── test_issues.py        # tests for the search, filters and sorting
+├── docs/                     # GitHub Pages report, demo video and screenshots
+│   └── screenshots/
 ├── pytest.ini                # pytest settings
 ├── requirements-dev.txt      # tools needed for development (pytest)
 ├── create_sample_folder.py   # builds a test folder with mixed files
@@ -85,10 +102,20 @@ no matter which directory your terminal is in. Running it again deletes the old
 python app.py
 ```
 1. Click **Browse...** and select the folder to scan.
-2. Optionally change the size limit or report formats.
+2. Optionally change the size limit, the stale limit or the report formats.
 3. Click **Scan Folder**. The results appear in the window, with an
    **Issues** tab and a **Recommendations** tab.
-4. Use **Open HTML Report**, **Open Markdown Report** or **Open Reports Folder**.
+4. Use the **Open report** buttons (HTML, Markdown, CSV or the reports folder).
+5. Use **Organize...**, **Undo Last Organize** and **Empty Backup...** to fix the problems
+   (see [Organize Mode](#organize-mode)).
+
+<p align="center">
+  <a href="docs/screenshots/01-scan.png">
+    <img src="docs/screenshots/01-scan.png" width="720" alt="The desktop app after a scan">
+  </a>
+  <br>
+  <sub>The desktop app after scanning the sample folder: summary numbers, the issues table and the recommendations.</sub>
+</p>
 
 ### Option 2: Interactive command line (pick folders with a window)
 ```bash
@@ -112,6 +139,31 @@ scanning several folders never overwrites an earlier report.
 
 > On Windows, use `py` instead of `python` if `python` is not recognized.
 
+## Search and Filters
+
+After a scan, the **Issues** tab lists one row per file per problem, so you can find the
+exact files even in very large folders.
+
+<p align="center">
+  <a href="docs/screenshots/02-filters.png">
+    <img src="docs/screenshots/02-filters.png" width="720" alt="Search and filters in the Issues tab">
+  </a>
+  <br>
+  <sub>Filtering to duplicate and stale files, with a search typed in.</sub>
+</p>
+
+- **A filter button for every check**, with its count: Duplicates, Oversized, Empty, Unknown
+  type, Stale, Bad names, Missing type and Skipped. Click one or several. A button with 0 is
+  grayed out, and **Clear filters** resets everything.
+- **Search** by file name, folder or detail. Every word you type must match, and upper or
+  lower case doesn't matter (for example `logo identical`).
+- **Click a number** in the summary row (such as Stale) to jump straight to those files.
+- **Click a column heading** to sort. Click again to reverse. The first click on **Size**
+  shows the biggest files first.
+- **Double-click a row** to open its folder with the file highlighted. Right-click for
+  **Show in folder** or **Copy path**.
+- Very large lists show the first 5,000 rows. Use the filters to narrow them down.
+
 ## Organize Mode
 
 Organize mode fixes three kinds of problems:
@@ -134,15 +186,24 @@ Organize mode fixes three kinds of problems:
 
 **In the desktop app:** scan a folder, click **Organize...**, choose the fixes, check the
 preview and click **Apply**. Use **Undo Last Organize** to put everything back.
-The preview lists every change with a tick box. Untick anything you don't want, 
-and only the ticked changes are applied. Issues that need a human decision (oversized, 
+The preview lists every change with a tick box. Untick anything you don't want,
+and only the ticked changes are applied. Issues that need a human decision (oversized,
 stale, bad names, unknown types) are listed but never changed automatically.
+
+<p align="center">
+  <a href="docs/screenshots/03-organize.png">
+    <img src="docs/screenshots/03-organize.png" width="720" alt="The organize preview with tick boxes">
+  </a>
+  <br>
+  <sub>The organize preview: every change has a tick box, and one has been unticked.</sub>
+</p>
 
 **On the command line:**
 ```bash
 python organizer.py sample_project --organize   # preview, then asks before applying
 python organizer.py sample_project --undo       # undo the last organize
 ```
+
 ### Emptying the backup
 
 Removed files stay in `_organizer_backup` until you empty it. Emptying it frees the disk
@@ -155,6 +216,14 @@ space, but **undo is no longer possible** for those changes.
   python organizer.py sample_project --clean-backup                 # asks first, then deletes
   python organizer.py sample_project --clean-backup --recycle-bin   # Windows: use the Recycle Bin
   ```
+
+<p align="center">
+  <a href="docs/screenshots/04-backup.png">
+    <img src="docs/screenshots/04-backup.png" width="520" alt="The Empty Backup window">
+  </a>
+  <br>
+  <sub>The Empty Backup window explains what will happen before anything is removed.</sub>
+</p>
 
 ## CSV Columns
 
@@ -228,13 +297,17 @@ picker window (or run `python organizer.py sample_project`).
 ## Running the Tests
 
 The project has automated tests that check the scanning, duplicate detection, size
-checks, skipped files, report generation and the sample folder results.
+checks, skipped files, report generation, organize mode with undo, the backup, and the
+search, filters and sorting.
 
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
 All tests should pass. Add `-v` to see each test by name.
+
+> One test (the symlink safety check) is skipped on Windows unless Developer Mode is turned
+> on, because Windows only lets some accounts create symlinks. That is expected.
 
 ## Customizing
 

@@ -10,6 +10,7 @@ import webbrowser
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
+import issues
 import organize
 import organizer
 
@@ -29,6 +30,32 @@ GREEN = ("#16a34a", "#15803d")
 RED = ("#dc2626", "#b91c1c")
 GRAY = ("#4b5563", "#374151")
 DISABLED_BG = "#b4b4b4"
+
+
+MAX_ROWS = 5000   # most rows shown in the issues table, so huge folders stay fast
+
+# Clicking one of these summary numbers filters the table to that kind of problem
+CARD_KINDS = {"Duplicate groups": "Duplicate", "Oversized": "Oversized", "Empty": "Empty file",
+              "Stale": "Stale", "Bad names": "Bad name", "Skipped": "Skipped"}
+
+# Column id -> heading text for the issues table
+ISSUE_COLUMNS = {"kind": "Issue", "item": "File / Item", "size": "Size", "details": "Details"}
+
+
+def show_in_folder(path):
+    """Open the folder that holds a file, with the file highlighted where the system allows it."""
+    path = Path(path)
+    while not path.exists() and path.parent != path:   # the file is gone? open the nearest folder left
+        path = path.parent
+    if sys.platform.startswith("win"):
+        if path.is_file():
+            subprocess.Popen(f'explorer /select,"{path}"')
+        else:
+            os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", "-R", str(path)] if path.is_file() else ["open", str(path)])
+    else:
+        subprocess.run(["xdg-open", str(path if path.is_dir() else path.parent)])
 
 
 def open_path(path):
@@ -109,9 +136,17 @@ class OrganizerApp:
         self.report_paths = []
         self.last_root = None       # folder of the last scan (used by organize mode)
         self.last_analysis = None   # results of the last scan
+        self.issue_rows = []        # every problem found, one row per file per problem
+        self.visible_rows = []      # the rows currently shown in the table
+        self.kind_vars = {}         # one tick per kind of problem, for the filter buttons
+        self.chips = {}
+        self.search_text = tk.StringVar()
+        self.count_text = tk.StringVar(value="")
+        self.sort_state = (None, False)   # (column, descending?)
+        self.filter_job = None
 
         root.title("File & Asset Organizer")
-        root.geometry("980x740")
+        root.geometry(f"980x{min(820, root.winfo_screenheight() - 90)}")   # never taller than the screen
         root.minsize(820, 600)
         self.build_ui()
 
@@ -208,16 +243,32 @@ class OrganizerApp:
             box.grid(row=0, column=i, sticky="w")
             value = ttk.Label(box, text="-", font=("Segoe UI", 14, "bold"))
             value.pack(anchor="w")
-            ttk.Label(box, text=name, foreground="gray").pack(anchor="w")
+            caption = ttk.Label(box, text=name, foreground="gray")
+            caption.pack(anchor="w")
             self.stat_labels[name] = value
+            if name in CARD_KINDS:      # click the number to see exactly which files
+                for widget in (box, value, caption):
+                    widget.bind("<Button-1>", lambda e, k=CARD_KINDS[name]: self.focus_kind(k))
+                    widget.configure(cursor="hand2")
 
         # Two tabs: a table of issues, and the recommendations
         self.tabs = ttk.Notebook(results)
         self.tabs.pack(fill="both", expand=True, pady=(10, 0))
-        table_frame, self.table = make_table(self.tabs, [("issue", "Issue", 130), ("item", "File / Item", 360),
-                                                         ("details", "Details", 280)])
+        issues_frame = ttk.Frame(self.tabs, padding=(4, 6, 4, 4))
+        self.build_issue_filters(issues_frame)
+        table_frame, self.table = make_table(issues_frame, [("kind", "Issue", 110), ("item", "File / Item", 330),
+                                                            ("size", "Size", 80), ("details", "Details", 330)])
+        table_frame.pack(fill="both", expand=True, pady=(6, 0))
+        self.table.column("size", anchor="e", stretch=False)
+        for column, title in ISSUE_COLUMNS.items():        # click a heading to sort by it
+            self.table.heading(column, text=title, command=lambda c=column: self.sort_by(c))
+        self.table.bind("<Double-Button-1>", self.on_row_double_click)
+        self.table.bind("<Button-3>", self.on_row_right_click)
+        self.menu = tk.Menu(self.root, tearoff=0)
+        self.menu.add_command(label="Show in folder", command=self.show_selected_in_folder)
+        self.menu.add_command(label="Copy path", command=self.copy_selected_path)
         recs_frame = ttk.Frame(self.tabs, padding=4)
-        self.tabs.add(table_frame, text="Issues")
+        self.tabs.add(issues_frame, text="Issues")
         self.tabs.add(recs_frame, text="Recommendations")
 
         # Recommendations: a read-only text box with a scrollbar, so long lists never get cut off
@@ -229,6 +280,131 @@ class OrganizerApp:
         self.recs_text.pack(side="left", fill="both", expand=True)
         recs_scroll.pack(side="left", fill="y")
         self.set_recommendations(["Run a scan to see recommendations."])
+
+    # ------------------------------------------------------------------
+    # Searching, filtering and sorting the issues table
+    # ------------------------------------------------------------------
+
+    def build_issue_filters(self, parent):
+        top = ttk.Frame(parent)
+        top.pack(fill="x")
+        ttk.Label(top, text="Search:").pack(side="left")
+        ttk.Entry(top, textvariable=self.search_text, width=30).pack(side="left", padx=(6, 8))
+        self.search_text.trace_add("write", lambda *args: self.schedule_filter())
+        ttk.Button(top, text="Clear filters", command=self.clear_filters).pack(side="left")
+        ttk.Label(top, text="Double-click a row to open its folder.", foreground="gray").pack(side="left", padx=12)
+        ttk.Label(top, textvariable=self.count_text).pack(side="right")
+
+        chips = ttk.Frame(parent)
+        chips.pack(fill="x", pady=(6, 0))
+        ttk.Label(chips, text="Show:").pack(side="left", padx=(0, 6))
+        for kind in issues.KINDS:
+            var = tk.BooleanVar(value=False)
+            # A classic button that turns blue when ticked: ttk's toggle buttons look different
+            # (and often unclear) on each version of Windows
+            chip = tk.Checkbutton(chips, text=issues.LABELS[kind], variable=var, indicatoron=False,
+                                  selectcolor="#bfdbfe", activebackground="#dbeafe", state="disabled",
+                                  disabledforeground="#9ca3af", relief="groove", bd=1, padx=9, pady=2,
+                                  font=("Segoe UI", 9), cursor="hand2", command=self.apply_filters)
+            chip.pack(side="left", padx=2)
+            self.kind_vars[kind], self.chips[kind] = var, chip
+
+    def schedule_filter(self):
+        """Wait a moment after each key press, so typing stays smooth on big lists."""
+        if self.filter_job:
+            self.root.after_cancel(self.filter_job)
+        self.filter_job = self.root.after(150, self.apply_filters)
+
+    def apply_filters(self):
+        self.filter_job = None
+        kinds = {kind for kind, var in self.kind_vars.items() if var.get()}
+        rows = issues.filter_rows(self.issue_rows, kinds, self.search_text.get())
+        column, descending = self.sort_state
+        if column:
+            rows = issues.sort_rows(rows, column, descending)
+        self.visible_rows = rows[:MAX_ROWS]
+
+        self.table.delete(*self.table.get_children())
+        for i, row in enumerate(self.visible_rows):
+            self.table.insert("", "end", iid=str(i),
+                              values=(row["kind"], row["item"], issues.size_text(row), row["details"]))
+        total = len(self.issue_rows)
+        if total == 0 and self.last_analysis:
+            self.table.insert("", "end", iid="none", values=("No issues", "-", "", "The folder looks well organized"))
+            self.count_text.set("No issues found")
+        elif total:
+            text = f"Showing {len(rows)} of {total}"
+            if len(rows) > MAX_ROWS:
+                text += f" (first {MAX_ROWS:,} listed, use the filters to narrow it down)"
+            self.count_text.set(text)
+
+    def clear_filters(self):
+        for var in self.kind_vars.values():
+            var.set(False)
+        self.search_text.set("")
+        self.apply_filters()
+
+    def focus_kind(self, kind):
+        """Show only one kind of problem (used when a summary number is clicked)."""
+        if not self.issue_rows:
+            return
+        if str(self.chips[kind]["state"]) == "disabled":      # a 0: there is nothing to show
+            self.status.set(f"{issues.LABELS[kind]}: 0 found, so there is nothing to show.")
+            return
+        for k, var in self.kind_vars.items():
+            var.set(k == kind)
+        self.tabs.select(0)
+        self.apply_filters()
+
+    def sort_by(self, column):
+        old_column, descending = self.sort_state
+        if column == old_column:
+            descending = not descending
+        else:
+            descending = column == "size"      # the first click on Size shows the biggest files first
+        self.sort_state = (column, descending)
+        for key, title in ISSUE_COLUMNS.items():
+            arrow = (" \u25bc" if descending else " \u25b2") if key == column else ""
+            self.table.heading(key, text=title + arrow)
+        self.apply_filters()
+
+    def selected_row(self):
+        chosen = self.table.selection()
+        if chosen and chosen[0].isdigit():
+            return self.visible_rows[int(chosen[0])]
+        return None
+
+    def selected_path(self):
+        row = self.selected_row()
+        if row and row["path"] and self.last_root:
+            return Path(self.last_root) / row["path"]
+        return None
+
+    def show_selected_in_folder(self, event=None):
+        path = self.selected_path()
+        if path:
+            show_in_folder(path)
+
+    def copy_selected_path(self):
+        path = self.selected_path()
+        if path:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(str(path))
+            self.status.set("Path copied to the clipboard.")
+
+    def on_row_double_click(self, event):
+        if self.table.identify_row(event.y):
+            self.show_selected_in_folder()
+
+    def on_row_right_click(self, event):
+        row_id = self.table.identify_row(event.y)
+        if not row_id:
+            return
+        self.table.selection_set(row_id)
+        state = "normal" if self.selected_path() else "disabled"
+        self.menu.entryconfig(0, state=state)
+        self.menu.entryconfig(1, state=state)
+        self.menu.tk_popup(event.x_root, event.y_root)
 
     # ------------------------------------------------------------------
     # Running work in the background
@@ -349,27 +525,18 @@ class OrganizerApp:
             color = "" if problems is None else (WARN_COLOR if problems else OK_COLOR)
             self.stat_labels[name].config(text=str(text), foreground=color)
 
-        # Fill the issues table
-        self.table.delete(*self.table.get_children())
-        rows = []
-        for group in a["duplicates"]:
-            rows.append(("Duplicate", ", ".join(f["rel"] for f in group),
-                         f"{len(group)} copies, {human(group[0]['size'])} each"))
-        rows += [("Oversized", f["rel"], human(f["size"])) for f in a["oversized"]]
-        rows += [("Empty file", f["rel"], "0 bytes") for f in a["empty"]]
-        rows += [("Unknown type", f["rel"], f"Extension: {f['ext']}") for f in a["unknown"]]
-        rows += [("Stale", f["rel"], f"Last modified {f['modified']:%Y-%m-%d}") for f in a["stale"]]
-        rows += [("Bad name", f["rel"], "; ".join(f["problems"])) for f in a["bad_names"]]
-        rows += [("Missing type", c, "No files of this type found") for c in a["missing"]]
-        rows += [("Skipped", x["rel"], x["reason"]) for x in a["skipped"]]
-        issue_count = len(rows)
-        if not rows:
-            rows.append(("No issues", "-", "The folder looks well organized"))
-        for row in rows:
-            self.table.insert("", "end", values=row)
+        # Fill the issues table (one row per file per problem) and reset the filters
+        self.issue_rows = issues.build_rows(a)
+        counts = issues.count_by_kind(self.issue_rows)
+        for kind, chip in self.chips.items():
+            n = counts.get(kind, 0)
+            chip.config(text=f"{issues.LABELS[kind]} ({n})", state="normal" if n else "disabled")
+            self.kind_vars[kind].set(False)
+        self.search_text.set("")
+        self.apply_filters()
 
         self.set_recommendations([f"\u2022 {r}" for r in recs])
-        self.tabs.tab(0, text=f"Issues ({issue_count})")
+        self.tabs.tab(0, text=f"Issues ({len(self.issue_rows)})")
         self.tabs.tab(1, text=f"Recommendations ({len(recs)})")
 
         self.report_paths = paths

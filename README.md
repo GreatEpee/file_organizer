@@ -4,6 +4,9 @@ A Python script that scans a project folder, categorizes every file, flags poten
 issues, and generates a clean Markdown and/or HTML report with summary stats and
 recommendations.
 
+## Live Demo
+[View the sample report](https://greatepee.github.io/file_organizer/)
+
 ## Features
 
 - **Categorizes files** into Images, PDFs, Documents, Spreadsheets, Presentations,
@@ -18,6 +21,8 @@ recommendations.
   - Unreadable files and folders (no permission, locked, broken links), listed in a
     "Skipped Files" section instead of being silently ignored
 - **Generates reports** in Markdown, HTML (supports light and dark mode), or both.
+- **Desktop app** with buttons, a results table and one-click report opening,
+  which can be packaged as a double-click `.exe`.
 - No external libraries needed. Uses only the Python standard library.
 
 ## Requirements
@@ -28,7 +33,8 @@ recommendations.
 
 ```
 file-organizer/
-├── organizer.py              # main script
+├── organizer.py              # scanning, analysis and report logic (command line)
+├── app.py                    # desktop app (window with buttons)
 ├── create_sample_folder.py   # builds a test folder with mixed files
 ├── README.md
 ├── reports/                  # generated reports go here
@@ -45,7 +51,17 @@ This always saves `sample_project/` inside the project folder, next to the scrip
 no matter which directory your terminal is in. Running it again deletes the old
 `sample_project/` and builds a fresh one, so test results stay the same.
 
-### Option 1: Interactive mode (pick folders with a window)
+### Option 1: Desktop app (easiest)
+```bash
+python app.py
+```
+1. Click **Browse...** and select the folder to scan.
+2. Optionally change the size limit or report formats.
+3. Click **Scan Folder**. The results appear in the window, with an
+   **Issues** tab and a **Recommendations** tab.
+4. Use **Open HTML Report**, **Open Markdown Report** or **Open Reports Folder**.
+
+### Option 2: Interactive command line (pick folders with a window)
 ```bash
 python organizer.py
 ```
@@ -56,7 +72,7 @@ python organizer.py
 
 If no window can open, the script asks you to type the folder path instead.
 
-### Option 2: Command line (scan one folder directly)
+### Option 3: Command line (scan one folder directly)
 ```bash
 python organizer.py sample_project
 python organizer.py "D:\MyProject"
@@ -67,7 +83,23 @@ several folders never overwrites an earlier report.
 
 > On Windows, use `py` instead of `python` if `python` is not recognized.
 
-## Options
+## Building the .exe (Windows)
+
+Turn the desktop app into a program anyone can double-click, without installing Python:
+```bash
+python -m pip install pyinstaller
+python -m PyInstaller --onefile --windowed --name FileOrganizer app.py
+```
+The program is created at `dist/FileOrganizer.exe`. Reports are saved in a
+`reports` folder next to the `.exe`.
+
+- `--onefile` packs everything into a single `.exe`
+- `--windowed` hides the black terminal window
+
+Windows may show a "Windows protected your PC" warning because the program isn't
+signed. Click **More info → Run anyway**.
+
+## Command-Line Options
 
 | Option | Description | Default |
 |---|---|---|

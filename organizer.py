@@ -178,7 +178,7 @@ def build_recommendations(a):
                     f"are wasting {human_size(a['wasted_bytes'])}. Keep one copy of each.")
     if a["oversized"]:
         recs.append(f"Compress or archive {len(a['oversized'])} file(s) larger than "
-                    f"{a['max_size_mb']} MB (e.g. resize images, export lighter PDFs, "
+                    f"{a['max_size_mb']:g} MB (e.g. resize images, export lighter PDFs, "
                     f"or move raw files to cloud storage).")
     if a["empty"]:
         recs.append(f"Delete or fill in {len(a['empty'])} empty file(s); they are usually leftovers.")
@@ -219,7 +219,7 @@ def render_markdown(root, a, recs):
     add(f"| Total size | {human_size(a['total_size'])} |")
     add(f"| Categories found | {len(a['by_category'])} |")
     add(f"| Duplicate groups | {len(a['duplicates'])} ({human_size(a['wasted_bytes'])} wasted) |")
-    add(f"| Oversized files (> {a['max_size_mb']} MB) | {len(a['oversized'])} |")
+    add(f"| Oversized files (> {a['max_size_mb']:g} MB) | {len(a['oversized'])} |")
     add(f"| Empty files | {len(a['empty'])} |")
     add(f"| Skipped (unreadable) | {len(a['skipped'])} |")
     add(f"| Missing asset types | {', '.join(a['missing']) or 'None'} |\n")
@@ -331,7 +331,7 @@ def render_html(root, a, recs):
     card("Total size", human_size(a["total_size"]))
     card("Categories", len(a["by_category"]))
     card("Duplicate groups", len(a["duplicates"]), "warn" if a["duplicates"] else "ok")
-    card(f"Oversized (> {a['max_size_mb']} MB)", len(a["oversized"]), "warn" if a["oversized"] else "ok")
+    card(f"Oversized (> {a['max_size_mb']:g} MB)", len(a["oversized"]), "warn" if a["oversized"] else "ok")
     card("Empty files", len(a["empty"]), "warn" if a["empty"] else "ok")
     card("Skipped (unreadable)", len(a["skipped"]), "warn" if a["skipped"] else "ok")
     add("</div>")
@@ -397,23 +397,21 @@ def pick_folder():
         return path or None
 
 
-def run_report(folder, fmt, output_name, max_size):
-    """Scan one folder and write its report(s). Returns True on success."""
+def generate_reports(folder, formats=("md", "html"), max_size=10, output_name=None,
+                     reports_dir=REPORTS_DIR):
+    """Scan one folder and write its report(s). Shared by the command line and the desktop app.
+    Returns (analysis, recommendations, report_paths). Raises NotADirectoryError for a bad folder."""
     root = Path(folder).expanduser().resolve()
     if not root.is_dir():
-        print(f"Error: '{folder}' is not a folder or does not exist.")
-        return False
+        raise NotADirectoryError(f"'{folder}' is not a folder or does not exist.")
 
     # Name reports after the scanned folder so different scans don't overwrite each other
     if not output_name:
         safe = re.sub(r"[^\w-]", "_", root.name) or "drive_root"
-        output_name = str(REPORTS_DIR / f"report_{safe}")
+        output_name = str(Path(reports_dir) / f"report_{safe}")
     Path(output_name).parent.mkdir(parents=True, exist_ok=True)
-
-    formats = ["md", "html"] if fmt == "both" else [fmt]
     outputs = [Path(f"{output_name}.{f}") for f in formats]
 
-    print(f"\nScanning {root} ...")
     files, skipped = scan_folder(root, skip_paths=outputs)  # don't count our own report
     analysis = analyze(files, skipped, max_size)
     recs = build_recommendations(analysis)
@@ -421,11 +419,25 @@ def run_report(folder, fmt, output_name, max_size):
     for f, out in zip(formats, outputs):
         content = render_markdown(root, analysis, recs) if f == "md" else render_html(root, analysis, recs)
         out.write_text(content, encoding="utf-8")
-        print(f"Report written: {out.resolve()}")
+    return analysis, recs, [out.resolve() for out in outputs]
 
+
+def run_report(folder, fmt, output_name, max_size):
+    """Command-line version: scan one folder and print the results. Returns True on success."""
+    formats = ["md", "html"] if fmt == "both" else [fmt]
+    try:
+        print(f"\nScanning {Path(folder).expanduser().resolve()} ...")
+        analysis, recs, outputs = generate_reports(folder, formats, max_size, output_name)
+    except NotADirectoryError as err:
+        print(f"Error: {err}")
+        return False
+
+    for out in outputs:
+        print(f"Report written: {out}")
     print(f"\n{analysis['total_files']} files, {human_size(analysis['total_size'])} | "
           f"{len(analysis['duplicates'])} duplicate group(s), {len(analysis['oversized'])} oversized, "
-          f"{len(analysis['empty'])} empty, {len(analysis['skipped'])} skipped, missing: {', '.join(analysis['missing']) or 'none'}")
+          f"{len(analysis['empty'])} empty, {len(analysis['skipped'])} skipped, missing: "
+          f"{', '.join(analysis['missing']) or 'none'}")
     return True
 
 

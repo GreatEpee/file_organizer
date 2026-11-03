@@ -5,4 +5,4 @@ build/
 dist/
 *.spec
 .pytest_cache/
-brag-output/
+brag-output*/

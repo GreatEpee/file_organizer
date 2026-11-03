@@ -603,7 +603,18 @@ def main():
                         help="Preview and apply fixes: remove duplicates and empty files, move loose files")
     parser.add_argument("--undo", action="store_true",
                         help="Undo the last organize on this folder")
+    parser.add_argument("--clean-backup", action="store_true",
+                        help="Empty the backup folder left by organize mode (undo is no longer possible)")
+    parser.add_argument("--recycle-bin", action="store_true",
+                        help="With --clean-backup: send the backup to the Recycle Bin (Windows only)")
     args = parser.parse_args()
+
+    # Emptying the backup folder
+    if args.clean_backup:
+        if not args.folder:
+            sys.exit("Error: please give a folder, e.g.  python organizer.py sample_project --clean-backup")
+        import organize
+        sys.exit(0 if organize.run_clean_cli(args.folder, recycle=args.recycle_bin) else 1)
 
     # Organize mode and undo (imported here because organize.py itself imports this file)
     if args.organize or args.undo:

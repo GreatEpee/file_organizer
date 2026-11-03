@@ -1,18 +1,18 @@
 ﻿path,name,extension,category,size_bytes,size,last_modified,duplicate_group,issues
-data/budget.csv,budget.csv,.csv,Spreadsheets,41,41 B,2024-11-03 19:38,,Stale
-data/sales_2026.xlsx,sales_2026.xlsx,.xlsx,Spreadsheets,1643,1.6 KB,2026-11-03 19:38,,
-docs/contract.pdf,contract.pdf,.pdf,PDFs,600,600 B,2026-11-03 19:38,1,Duplicate (group 1)
-docs/contract_final.pdf,contract_final.pdf,.pdf,PDFs,600,600 B,2026-11-03 19:38,1,Duplicate (group 1)
-docs/empty_draft.txt,empty_draft.txt,.txt,Documents,0,0 B,2026-11-03 19:38,,Empty file
-docs/meeting_notes.md,meeting_notes.md,.md,Documents,65,65 B,2026-11-03 19:38,,
-docs/project_brief.txt,project_brief.txt,.txt,Documents,51,51 B,2026-11-03 19:38,,
-docs/proposal_final_FINAL_v2.docx,proposal_final_FINAL_v2.docx,.docx,Documents,974,974 B,2026-11-03 19:38,,Messy version name (like final_v2)
-images/banner.jpg,banner.jpg,.jpg,Images,653,653 B,2026-11-03 19:38,,
-images/hero_raw.png,hero_raw.png,.png,Images,12657989,12.1 MB,2026-11-03 19:38,,Oversized
-images/logo.png,logo.png,.png,Images,659,659 B,2026-11-03 19:38,2,Duplicate (group 2)
-images/logo_copy.png,logo_copy.png,.png,Images,659,659 B,2026-11-03 19:38,2,Duplicate (group 2); Looks like a copy
-misc/export.dat,export.dat,.dat,Other,50,50 B,2026-11-03 19:38,,Unknown type
-misc/LICENSE,LICENSE,(none),Other,12,12 B,2026-11-03 19:38,,Unknown type
-misc/old_assets.zip,old_assets.zip,.zip,Archives,487,487 B,2023-11-04 19:38,,Stale
-Screenshot (2).png,Screenshot (2).png,.png,Images,1020,1020 B,2026-11-03 19:38,,Looks like a copy; Loose file in root folder
-scripts/build.py,build.py,.py,Code,29,29 B,2026-11-03 19:38,,
+data/budget.csv,budget.csv,.csv,Spreadsheets,41,41 B,2024-11-04 00:24,,Stale
+data/sales_2026.xlsx,sales_2026.xlsx,.xlsx,Spreadsheets,1643,1.6 KB,2026-11-04 00:24,,
+docs/contract.pdf,contract.pdf,.pdf,PDFs,600,600 B,2026-11-04 00:24,1,Duplicate (group 1)
+docs/contract_final.pdf,contract_final.pdf,.pdf,PDFs,600,600 B,2026-11-04 00:24,1,Duplicate (group 1)
+docs/empty_draft.txt,empty_draft.txt,.txt,Documents,0,0 B,2026-11-04 00:24,,Empty file
+docs/meeting_notes.md,meeting_notes.md,.md,Documents,65,65 B,2026-11-04 00:24,,
+docs/project_brief.txt,project_brief.txt,.txt,Documents,51,51 B,2026-11-04 00:24,,
+docs/proposal_final_FINAL_v2.docx,proposal_final_FINAL_v2.docx,.docx,Documents,974,974 B,2026-11-04 00:24,,Messy version name (like final_v2)
+images/banner.jpg,banner.jpg,.jpg,Images,653,653 B,2026-11-04 00:24,,
+images/hero_raw.png,hero_raw.png,.png,Images,12658411,12.1 MB,2026-11-04 00:24,,Oversized
+images/logo.png,logo.png,.png,Images,659,659 B,2026-11-04 00:24,2,Duplicate (group 2)
+images/logo_copy.png,logo_copy.png,.png,Images,659,659 B,2026-11-04 00:24,2,Duplicate (group 2); Looks like a copy
+misc/export.dat,export.dat,.dat,Other,50,50 B,2026-11-04 00:24,,Unknown type
+misc/LICENSE,LICENSE,(none),Other,12,12 B,2026-11-04 00:24,,Unknown type
+misc/old_assets.zip,old_assets.zip,.zip,Archives,487,487 B,2023-11-05 00:24,,Stale
+Screenshot (2).png,Screenshot (2).png,.png,Images,1020,1020 B,2026-11-04 00:24,,Looks like a copy; Loose file in root folder
+scripts/build.py,build.py,.py,Code,29,29 B,2026-11-04 00:24,,

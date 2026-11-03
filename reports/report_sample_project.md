@@ -1,7 +1,7 @@
 # File & Asset Inventory Report
 
 **Folder:** `D:\file_organizer\sample_project`  
-**Generated:** 2026-11-03 19:38
+**Generated:** 2026-11-04 00:24
 
 ## Summary
 
@@ -50,8 +50,8 @@
 - Presentations
 
 ### Stale Files
-- `misc/old_assets.zip` (last modified 2023-11-04, 1095 days ago)
-- `data/budget.csv` (last modified 2024-11-03, 730 days ago)
+- `misc/old_assets.zip` (last modified 2023-11-05, 1095 days ago)
+- `data/budget.csv` (last modified 2024-11-04, 730 days ago)
 
 ### Naming Problems
 - `Screenshot (2).png`: Looks like a copy
@@ -88,50 +88,50 @@
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `Screenshot (2).png` | .png | 1020 B | 2026-11-03 19:38 |
-| `images/banner.jpg` | .jpg | 653 B | 2026-11-03 19:38 |
-| `images/hero_raw.png` | .png | 12.1 MB | 2026-11-03 19:38 |
-| `images/logo.png` | .png | 659 B | 2026-11-03 19:38 |
-| `images/logo_copy.png` | .png | 659 B | 2026-11-03 19:38 |
+| `Screenshot (2).png` | .png | 1020 B | 2026-11-04 00:24 |
+| `images/banner.jpg` | .jpg | 653 B | 2026-11-04 00:24 |
+| `images/hero_raw.png` | .png | 12.1 MB | 2026-11-04 00:24 |
+| `images/logo.png` | .png | 659 B | 2026-11-04 00:24 |
+| `images/logo_copy.png` | .png | 659 B | 2026-11-04 00:24 |
 
 ### Documents (4)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `docs/empty_draft.txt` | .txt | 0 B | 2026-11-03 19:38 |
-| `docs/meeting_notes.md` | .md | 65 B | 2026-11-03 19:38 |
-| `docs/project_brief.txt` | .txt | 51 B | 2026-11-03 19:38 |
-| `docs/proposal_final_FINAL_v2.docx` | .docx | 974 B | 2026-11-03 19:38 |
+| `docs/empty_draft.txt` | .txt | 0 B | 2026-11-04 00:24 |
+| `docs/meeting_notes.md` | .md | 65 B | 2026-11-04 00:24 |
+| `docs/project_brief.txt` | .txt | 51 B | 2026-11-04 00:24 |
+| `docs/proposal_final_FINAL_v2.docx` | .docx | 974 B | 2026-11-04 00:24 |
 
 ### Spreadsheets (2)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `data/budget.csv` | .csv | 41 B | 2024-11-03 19:38 |
-| `data/sales_2026.xlsx` | .xlsx | 1.6 KB | 2026-11-03 19:38 |
+| `data/budget.csv` | .csv | 41 B | 2024-11-04 00:24 |
+| `data/sales_2026.xlsx` | .xlsx | 1.6 KB | 2026-11-04 00:24 |
 
 ### PDFs (2)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `docs/contract.pdf` | .pdf | 600 B | 2026-11-03 19:38 |
-| `docs/contract_final.pdf` | .pdf | 600 B | 2026-11-03 19:38 |
+| `docs/contract.pdf` | .pdf | 600 B | 2026-11-04 00:24 |
+| `docs/contract_final.pdf` | .pdf | 600 B | 2026-11-04 00:24 |
 
 ### Other (2)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `misc/LICENSE` | (none) | 12 B | 2026-11-03 19:38 |
-| `misc/export.dat` | .dat | 50 B | 2026-11-03 19:38 |
+| `misc/LICENSE` | (none) | 12 B | 2026-11-04 00:24 |
+| `misc/export.dat` | .dat | 50 B | 2026-11-04 00:24 |
 
 ### Archives (1)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `misc/old_assets.zip` | .zip | 487 B | 2023-11-04 19:38 |
+| `misc/old_assets.zip` | .zip | 487 B | 2023-11-05 00:24 |
 
 ### Code (1)
 
 | File | Type | Size | Last Modified |
 |---|---|---:|---|
-| `scripts/build.py` | .py | 29 B | 2026-11-03 19:38 |
+| `scripts/build.py` | .py | 29 B | 2026-11-04 00:24 |

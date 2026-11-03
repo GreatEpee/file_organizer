@@ -27,6 +27,7 @@ OK_COLOR = "#15803d"     # green: no problems
 BLUE = ("#2563eb", "#1d4ed8")
 GREEN = ("#16a34a", "#15803d")
 RED = ("#dc2626", "#b91c1c")
+GRAY = ("#4b5563", "#374151")
 DISABLED_BG = "#b4b4b4"
 
 
@@ -47,7 +48,7 @@ class ColorButton(tk.Button):
     def __init__(self, parent, colors, **kwargs):
         self.color, self.hover = colors
         super().__init__(parent, fg="white", activeforeground="white", disabledforeground="#f2f2f2",
-                         activebackground=self.hover, relief="flat", bd=0, padx=14, pady=6,
+                         activebackground=self.hover, relief="flat", bd=0, padx=18, pady=6,
                          font=("Segoe UI", 10, "bold"), cursor="hand2", **kwargs)
         self.bind("<Enter>", self.on_hover)
         self.bind("<Leave>", self.on_leave)
@@ -67,10 +68,10 @@ class ColorButton(tk.Button):
             self.config(bg=self.color)
 
 
-def make_table(parent, columns):
+def make_table(parent, columns, show="headings"):
     """A table (Treeview) with a scrollbar. columns = [(id, title, width), ...]"""
     frame = ttk.Frame(parent)
-    table = ttk.Treeview(frame, columns=[c[0] for c in columns], show="headings", height=8)
+    table = ttk.Treeview(frame, columns=[c[0] for c in columns], show=show, height=8)
     for col, title, width in columns:
         table.heading(col, text=title)
         table.column(col, width=width, anchor="w")
@@ -79,6 +80,20 @@ def make_table(parent, columns):
     table.pack(side="left", fill="both", expand=True)
     scroll.pack(side="left", fill="y")
     return frame, table
+
+
+def make_checkbox_images(master):
+    """Draw two small checkbox pictures (unticked, ticked) with no files or extra libraries.
+    Text symbols like a ballot-box character look different on every system, so we draw our own."""
+    size, border = 16, "#6b7280"
+    off = tk.PhotoImage(master=master, width=size, height=size)
+    on = tk.PhotoImage(master=master, width=size, height=size)
+    for img, fill in ((off, "#ffffff"), (on, GREEN[0])):
+        img.put(border, to=(0, 0, size, size))               # outline
+        img.put(fill, to=(1, 1, size - 1, size - 1))         # inside
+    for x, y in [(3, 8), (4, 9), (5, 10), (6, 11), (7, 10), (8, 9), (9, 8), (10, 7), (11, 6), (12, 5)]:
+        on.put("#ffffff", to=(x, y, x + 1, y + 2))           # the check mark, two pixels thick
+    return off, on
 
 
 class OrganizerApp:
@@ -96,8 +111,8 @@ class OrganizerApp:
         self.last_analysis = None   # results of the last scan
 
         root.title("File & Asset Organizer")
-        root.geometry("940x700")
-        root.minsize(760, 560)
+        root.geometry("980x740")
+        root.minsize(820, 600)
         self.build_ui()
 
     # ------------------------------------------------------------------
@@ -148,25 +163,36 @@ class OrganizerApp:
         self.progress.pack(side="left", padx=12)
         ttk.Label(step3, textvariable=self.status).pack(side="left")
 
-        # Bottom buttons (packed before the results so they always stay visible)
-        actions = ttk.Frame(main)
-        actions.pack(side="bottom", fill="x", pady=(10, 0))
-        self.open_html_btn = ttk.Button(actions, text="Open HTML Report", state="disabled",
+        # Bottom buttons, in two rows so they never get squeezed together
+        # (packed before the results so they always stay visible)
+        bottom = ttk.Frame(main)
+        bottom.pack(side="bottom", fill="x", pady=(10, 0))
+
+        reports_row = ttk.Frame(bottom)
+        reports_row.pack(fill="x")
+        ttk.Label(reports_row, text="Open report:", foreground="gray").pack(side="left", padx=(0, 8))
+        self.open_html_btn = ttk.Button(reports_row, text="HTML", state="disabled",
                                         command=lambda: self.open_report(".html"))
         self.open_html_btn.pack(side="left")
-        self.open_md_btn = ttk.Button(actions, text="Open Markdown", state="disabled",
+        self.open_md_btn = ttk.Button(reports_row, text="Markdown", state="disabled",
                                       command=lambda: self.open_report(".md"))
         self.open_md_btn.pack(side="left", padx=8)
-        self.open_csv_btn = ttk.Button(actions, text="Open CSV (Excel)", state="disabled",
+        self.open_csv_btn = ttk.Button(reports_row, text="CSV (Excel)", state="disabled",
                                        command=lambda: self.open_report(".csv"))
         self.open_csv_btn.pack(side="left")
-        ttk.Button(actions, text="Reports Folder", command=self.open_reports_folder).pack(side="left", padx=8)
-        self.undo_btn = ColorButton(actions, RED, text="Undo Last Organize", state="disabled",
-                                    command=self.undo_organize)
-        self.undo_btn.pack(side="right")
-        self.organize_btn = ColorButton(actions, GREEN, text="Organize...", state="disabled",
+        ttk.Button(reports_row, text="Reports Folder", command=self.open_reports_folder).pack(side="left", padx=8)
+
+        actions_row = ttk.Frame(bottom)
+        actions_row.pack(fill="x", pady=(10, 0))
+        self.organize_btn = ColorButton(actions_row, GREEN, text="Organize...", state="disabled",
                                         command=lambda: OrganizeDialog(self))
-        self.organize_btn.pack(side="right", padx=8)
+        self.organize_btn.pack(side="left")
+        self.undo_btn = ColorButton(actions_row, RED, text="Undo Last Organize", state="disabled",
+                                    command=self.undo_organize)
+        self.undo_btn.pack(side="left", padx=10)
+        self.backup_btn = ColorButton(actions_row, GRAY, text="Empty Backup...", state="disabled",
+                                      command=lambda: EmptyBackupDialog(self))
+        self.backup_btn.pack(side="left")
 
         # Results area
         results = ttk.LabelFrame(main, text=" Results ", padding=10)
@@ -238,12 +264,17 @@ class OrganizerApp:
             self.progress.config(mode="indeterminate", value=0)
             self.progress.start(12)
             self.status.set(text)
-            for btn in (self.scan_btn, self.organize_btn, self.undo_btn):
+            for btn in (self.scan_btn, self.organize_btn, self.undo_btn, self.backup_btn):
                 btn.set_enabled(False)
         else:
             self.progress.stop()
             self.progress.config(mode="determinate", value=100)   # show a full bar when finished
             self.refresh_buttons()
+
+    def finish(self, text):
+        """Show a final message and reset the progress bar, for jobs that end without a rescan."""
+        self.status.set(text)
+        self.progress.config(mode="determinate", value=0)
 
     def refresh_buttons(self):
         """Enable each button only when it can actually be used."""
@@ -251,6 +282,7 @@ class OrganizerApp:
         self.scan_btn.set_enabled(bool(folder))
         self.organize_btn.set_enabled(bool(self.last_analysis))
         self.undo_btn.set_enabled(bool(folder) and organize.has_undo(folder))
+        self.backup_btn.set_enabled(bool(folder) and organize.backup_path(folder).is_dir())
 
     # ------------------------------------------------------------------
     # Scanning
@@ -359,6 +391,7 @@ class OrganizerApp:
 
     def on_organize_done(self, ok, result):
         if not ok:
+            self.finish("Organize failed.")
             messagebox.showerror("Organize failed", str(result))
             return
         lines = [f"{len(result['done'])} change(s) applied."]
@@ -379,6 +412,7 @@ class OrganizerApp:
 
     def on_undo_done(self, ok, result):
         if not ok:
+            self.finish("Undo failed.")
             messagebox.showerror("Undo failed", str(result))
             return
         lines = [f"Restored {result['restored']} file(s)."]
@@ -387,6 +421,21 @@ class OrganizerApp:
             lines += [f"\u2022 {move['from']}: {reason}" for move, reason in result["failed"][:10]]
         messagebox.showinfo("Undo finished", "\n".join(lines))
         self.start_scan()
+
+    def on_empty_backup_done(self, ok, result):
+        if not ok:
+            self.finish("Could not empty the backup.")
+            messagebox.showerror("Could not empty the backup",
+                                 f"{result}\n\nNothing was deleted.")
+            return
+        if result["emptied"]:
+            self.finish(f"Backup emptied. Freed {organizer.human_size(result['freed'])}.")
+            messagebox.showinfo("Backup emptied",
+                                f"Freed {organizer.human_size(result['freed'])} "
+                                f"({result['files']} file(s), {result['method']}).")
+        else:
+            self.finish("There was no backup to empty.")
+        self.refresh_buttons()
 
     # ------------------------------------------------------------------
     # Opening reports
@@ -414,79 +463,201 @@ class OrganizerApp:
 
 
 class OrganizeDialog:
-    """A preview window: shows every planned change and only applies them after confirmation."""
+    """A preview window that lists every planned change with a tick box, so the user chooses
+    exactly what to apply. Nothing on disk changes until they confirm."""
 
     def __init__(self, app):
         self.app = app
         self.win = tk.Toplevel(app.root)
         self.win.title("Organize Folder")
-        self.win.geometry("880x500")
+        self.win.geometry("980x600")
+        self.win.minsize(760, 460)
         self.win.transient(app.root)   # stays on top of the main window
         self.win.grab_set()            # main window can't be clicked while this is open
 
         self.duplicates = tk.BooleanVar(value=True)
         self.empty = tk.BooleanVar(value=True)
         self.loose = tk.BooleanVar(value=True)
-        self.plan = []
+        self.plan = []           # every change the three tick boxes above allow
+        self.unticked = set()    # files the user took out; remembered when the boxes above change
+        self.box_off, self.box_on = make_checkbox_images(self.win)   # keep references, or Tk drops them
 
         body = ttk.Frame(self.win, padding=16)
         body.pack(fill="both", expand=True)
         ttk.Label(body, text="Preview changes", font=("Segoe UI", 14, "bold")).pack(anchor="w")
-        ttk.Label(body, foreground="gray", wraplength=840, justify="left",
+        ttk.Label(body, foreground="gray", wraplength=930, justify="left",
                   text=f"Nothing is deleted permanently. Removed files are moved into the "
                        f"'{organize.BACKUP_DIR}' folder inside the scanned folder, and you can undo "
-                       f"everything with 'Undo Last Organize'.").pack(anchor="w", pady=(2, 10))
+                       f"everything with 'Undo Last Organize'.").pack(anchor="w", pady=(2, 4))
+        note = self.undecided_note()
+        if note:
+            ttk.Label(body, foreground=WARN_COLOR, wraplength=930, justify="left",
+                      text=note).pack(anchor="w", pady=(0, 6))
 
         choices = ttk.Frame(body)
-        choices.pack(fill="x")
+        choices.pack(fill="x", pady=(4, 0))
         for text, var in [("Remove duplicate copies (keep one)", self.duplicates),
                           ("Remove empty files", self.empty),
                           ("Move loose files into folders", self.loose)]:
             ttk.Checkbutton(choices, text=text, variable=var,
                             command=self.refresh).pack(side="left", padx=(0, 16))
 
+        ttk.Label(body, foreground="gray",
+                  text="Click a row to tick or untick it. Only ticked changes are applied."
+                  ).pack(anchor="w", pady=(8, 0))
+
         # Buttons first, at the bottom, so they always stay visible
         buttons = ttk.Frame(body)
         buttons.pack(side="bottom", fill="x", pady=(10, 0))
         self.summary = ttk.Label(buttons, text="")
         self.summary.pack(side="left")
-        self.apply_btn = ttk.Button(buttons, text="Apply Changes", command=self.apply)
+        self.apply_btn = ColorButton(buttons, GREEN, text="Apply Changes", command=self.apply)
         self.apply_btn.pack(side="right")
         ttk.Button(buttons, text="Cancel", command=self.win.destroy).pack(side="right", padx=8)
+        self.none_btn = ttk.Button(buttons, text="Select none", command=lambda: self.set_all(False))
+        self.none_btn.pack(side="right")
+        self.all_btn = ttk.Button(buttons, text="Select all", command=lambda: self.set_all(True))
+        self.all_btn.pack(side="right", padx=8)
 
-        table_frame, self.table = make_table(body, [("action", "Change", 140), ("file", "File", 320),
-                                                    ("result", "What happens", 380)])
-        table_frame.pack(fill="both", expand=True, pady=(10, 0))
+        table_frame, self.table = make_table(
+            body, [("action", "Change", 140), ("file", "File", 270), ("result", "What happens", 440)],
+            show="tree headings")      # the "tree" column on the left holds the checkbox picture
+        table_frame.pack(fill="both", expand=True, pady=(6, 0))
+        self.table.heading("#0", text="Apply")
+        self.table.column("#0", width=64, minwidth=64, stretch=False, anchor="w")
+        self.table.configure(selectmode="none")      # clicking ticks a row, it doesn't highlight it
+        self.table.bind("<Button-1>", self.on_click)
+        self.table.bind("<Double-Button-1>", self.on_click)   # a fast second click still counts
         self.refresh()
 
+    def undecided_note(self):
+        """List the issues that Organize can't fix by itself, so nobody wonders why they remain."""
+        a = self.app.last_analysis
+        # files that organize removes are gone afterwards, so they don't count as 'left over'
+        gone = {i["src"] for i in organize.plan_changes(self.app.last_root, a)
+                if i["action"] != organize.MOVE_LOOSE}
+        left = lambda items: len([f for f in items if f["rel"] not in gone])
+        parts = [(left(a["oversized"]), "oversized"), (left(a["unknown"]), "unknown type"),
+                 (left(a["stale"]), "stale"), (left(a["bad_names"]), "bad name"),
+                 (len(a["missing"]), "missing type"), (len(a["skipped"]), "skipped")]
+        parts = [f"{n} {label}" for n, label in parts if n]
+        if not parts:
+            return ""
+        return ("Organize doesn't fix these because they need your decision: "
+                + ", ".join(parts) + ". See the Issues tab and the reports.")
+
+    def row_look(self, item):
+        """Everything a table row shows: its checkbox picture and its text columns."""
+        image = self.box_off if item["src"] in self.unticked else self.box_on
+        if item["action"] == organize.MOVE_LOOSE:
+            result = f"Moved to {item['dst']}"
+        else:
+            result = f"Moved to backup ({item['reason']})"
+        return {"image": image, "values": (item["action"], item["src"], result)}
+
     def refresh(self):
-        """Rebuild the plan whenever a checkbox changes. Nothing on disk is touched here."""
+        """Rebuild the list when a fix-type box changes. Nothing on disk is touched here."""
         self.plan = organize.plan_changes(self.app.last_root, self.app.last_analysis,
                                           duplicates=self.duplicates.get(), empty=self.empty.get(),
                                           loose=self.loose.get())
         self.table.delete(*self.table.get_children())
-        for item in self.plan:
-            if item["action"] == organize.MOVE_LOOSE:
-                result = f"Moved to {item['dst']}"
-            else:
-                result = f"Moved to backup ({item['reason']})"
-            self.table.insert("", "end", values=(item["action"], item["src"], result))
-        count = len(self.plan)
-        self.summary.config(text=f"{count} change(s) will be made." if count else "Nothing to change.")
-        self.apply_btn.config(state="normal" if count else "disabled",
-                              text=f"Apply {count} Change(s)" if count else "Apply Changes")
+        for i, item in enumerate(self.plan):
+            self.table.insert("", "end", iid=str(i), **self.row_look(item))
+        self.update_summary()
+
+    def on_click(self, event):
+        iid = self.table.identify_row(event.y)
+        if iid:                       # '' means the click was on the header or empty space
+            src = self.plan[int(iid)]["src"]
+            self.unticked.symmetric_difference_update({src})     # tick <-> untick
+            self.table.item(iid, **self.row_look(self.plan[int(iid)]))
+            self.update_summary()
+        return "break"
+
+    def set_all(self, ticked):
+        sources = {item["src"] for item in self.plan}
+        if ticked:
+            self.unticked -= sources
+        else:
+            self.unticked |= sources
+        for i, item in enumerate(self.plan):
+            self.table.item(str(i), **self.row_look(item))
+        self.update_summary()
+
+    def chosen(self):
+        """The changes that are currently ticked."""
+        return [item for item in self.plan if item["src"] not in self.unticked]
+
+    def update_summary(self):
+        chosen, total = len(self.chosen()), len(self.plan)
+        self.summary.config(text=f"{chosen} of {total} change(s) selected." if total else "Nothing to change.")
+        self.apply_btn.set_enabled(chosen > 0)
+        self.apply_btn.config(text=f"Apply {chosen} Change(s)" if chosen else "Apply Changes")
+        for btn in (self.all_btn, self.none_btn):
+            btn.config(state="normal" if total else "disabled")
 
     def apply(self):
-        count = len(self.plan)
+        plan, total = self.chosen(), len(self.plan)
         if not messagebox.askyesno("Apply changes?",
-                                   f"Apply {count} change(s) to this folder?\n\n{self.app.last_root}\n\n"
+                                   f"Apply {len(plan)} of {total} change(s) to this folder?\n\n"
+                                   f"{self.app.last_root}\n\n"
                                    "Removed files go into the backup folder, and you can undo this.",
                                    parent=self.win):
             return
-        plan, root = self.plan, self.app.last_root
+        root = self.app.last_root
         self.win.destroy()
         self.app.run_in_background(lambda: organize.apply_changes(root, plan),
                                    self.app.on_organize_done, "Organizing...")
+
+
+class EmptyBackupDialog:
+    """Confirmation window for emptying the backup folder. This is the only action in the app
+    that removes files for good, so it explains exactly what will happen first."""
+
+    def __init__(self, app):
+        self.app = app
+        self.root_folder = Path(app.folder.get())
+        info = organize.backup_info(self.root_folder)
+
+        self.win = tk.Toplevel(app.root)
+        self.win.title("Empty Backup")
+        self.win.geometry("520x330")
+        self.win.resizable(False, False)
+        self.win.transient(app.root)
+        self.win.grab_set()
+
+        self.recycle = tk.BooleanVar(value=organize.can_use_recycle_bin())
+
+        body = ttk.Frame(self.win, padding=18)
+        body.pack(fill="both", expand=True)
+        ttk.Label(body, text="Empty the backup folder?", font=("Segoe UI", 14, "bold")).pack(anchor="w")
+        ttk.Label(body, wraplength=480, justify="left", text=(
+            f"The backup holds {info['files']} removed file(s) using "
+            f"{organizer.human_size(info['size'])}.\nEmptying it frees that space.")
+        ).pack(anchor="w", pady=(8, 0))
+        if info["can_undo"]:
+            ttk.Label(body, wraplength=480, justify="left", foreground=WARN_COLOR, text=(
+                "After this, 'Undo Last Organize' will no longer work for those changes.")
+            ).pack(anchor="w", pady=(8, 0))
+
+        box = ttk.Checkbutton(body, variable=self.recycle,
+                              text="Send to the Recycle Bin instead of deleting permanently")
+        box.pack(anchor="w", pady=(14, 0))
+        if not organize.can_use_recycle_bin():
+            box.config(state="disabled")
+            ttk.Label(body, foreground="gray", text="(The Recycle Bin option is only available on Windows.)"
+                      ).pack(anchor="w")
+
+        buttons = ttk.Frame(body)
+        buttons.pack(side="bottom", fill="x")
+        ColorButton(buttons, RED, text="Empty Backup", command=self.apply).pack(side="right")
+        ttk.Button(buttons, text="Cancel", command=self.win.destroy).pack(side="right", padx=8)
+
+    def apply(self):
+        recycle, root = self.recycle.get(), self.root_folder
+        self.win.destroy()
+        self.app.run_in_background(lambda: organize.empty_backup(root, recycle),
+                                   self.app.on_empty_backup_done, "Emptying backup...")
 
 
 def main():

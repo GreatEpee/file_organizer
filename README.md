@@ -134,12 +134,27 @@ Organize mode fixes three kinds of problems:
 
 **In the desktop app:** scan a folder, click **Organize...**, choose the fixes, check the
 preview and click **Apply**. Use **Undo Last Organize** to put everything back.
+The preview lists every change with a tick box. Untick anything you don't want, 
+and only the ticked changes are applied. Issues that need a human decision (oversized, 
+stale, bad names, unknown types) are listed but never changed automatically.
 
 **On the command line:**
 ```bash
 python organizer.py sample_project --organize   # preview, then asks before applying
 python organizer.py sample_project --undo       # undo the last organize
 ```
+### Emptying the backup
+
+Removed files stay in `_organizer_backup` until you empty it. Emptying it frees the disk
+space, but **undo is no longer possible** for those changes.
+
+- **Desktop app:** click **Empty Backup...**. It shows how much space will be freed and
+  offers to send the backup to the Recycle Bin (Windows) instead of deleting it for good.
+- **Command line:**
+  ```bash
+  python organizer.py sample_project --clean-backup                 # asks first, then deletes
+  python organizer.py sample_project --clean-backup --recycle-bin   # Windows: use the Recycle Bin
+  ```
 
 ## CSV Columns
 
@@ -183,6 +198,8 @@ signed. Click **More info → Run anyway**.
 | `--stale-days` | Flag files not modified for this many days | `365` |
 | `--organize` | Preview and apply fixes (asks before changing anything) | — |
 | `--undo` | Undo the last organize on the folder | — |
+| `--clean-backup` | Empty the backup folder left by organize mode | — |
+| `--recycle-bin` | With `--clean-backup`: send it to the Recycle Bin (Windows only) | — |
 
 Example:
 ```bash

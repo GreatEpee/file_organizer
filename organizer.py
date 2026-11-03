@@ -1,8 +1,10 @@
 #this file organizes and generates a report
 
 import argparse
+import csv
 import hashlib
 import html
+import io
 import os
 import re
 import sys
@@ -182,6 +184,7 @@ def analyze(files, skipped, max_size_mb, stale_days=DEFAULT_STALE_DAYS):
     wasted = sum(g[0]["size"] * (len(g) - 1) for g in duplicates)
 
     return {
+        "files": files,
         "total_files": len(files),
         "total_size": sum(f["size"] for f in files),
         "by_category": dict(sorted(by_category.items(), key=lambda kv: -len(kv[1]))),
@@ -427,6 +430,64 @@ def render_html(root, a, recs):
     return "\n".join(parts)
 
 
+# CSV export: one row per file, so the data can be sorted and filtered in Excel
+
+CSV_COLUMNS = ["path", "name", "extension", "category", "size_bytes", "size",
+               "last_modified", "duplicate_group", "issues"]
+
+
+def build_csv_rows(a):
+    """One row per file with every issue it has, plus one row per item that couldn't be read."""
+    dup_group = {f["rel"]: i for i, group in enumerate(a["duplicates"], 1) for f in group}
+    oversized = {f["rel"] for f in a["oversized"]}
+    stale = {f["rel"] for f in a["stale"]}
+    name_problems = {f["rel"]: f["problems"] for f in a["bad_names"]}
+    skipped = {x["rel"]: x for x in a["skipped"]}
+
+    rows = []
+    for f in sorted(a["files"], key=lambda f: f["rel"].lower()):
+        rel = f["rel"]
+        issues = []
+        if rel in dup_group:
+            issues.append(f"Duplicate (group {dup_group[rel]})")
+        if rel in oversized:
+            issues.append("Oversized")
+        if f["size"] == 0:
+            issues.append("Empty file")
+        if f["category"] == "Other":
+            issues.append("Unknown type")
+        if rel in stale:
+            issues.append("Stale")
+        issues += name_problems.get(rel, [])
+        if f["category"] in ("Images", "Documents") and "/" not in rel:
+            issues.append("Loose file in root folder")
+        if rel in skipped:   # listed, but couldn't be opened for the duplicate check
+            issues.append(skipped.pop(rel)["reason"])
+        rows.append({
+            "path": rel, "name": f["name"], "extension": f["ext"], "category": f["category"],
+            "size_bytes": f["size"], "size": human_size(f["size"]),
+            "last_modified": f"{f['modified']:%Y-%m-%d %H:%M}",
+            "duplicate_group": dup_group.get(rel, ""),
+            "issues": "; ".join(issues),
+        })
+
+    # Files and folders that couldn't be read at all get their own rows
+    for x in skipped.values():
+        rows.append({"path": x["rel"], "name": Path(x["rel"]).name, "extension": "",
+                     "category": x["kind"], "size_bytes": "", "size": "", "last_modified": "",
+                     "duplicate_group": "", "issues": f"Skipped: {x['reason']}"})
+    return rows
+
+
+def render_csv(a):
+    """Return the CSV text. The csv module handles commas and quotes inside file names."""
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=CSV_COLUMNS)
+    writer.writeheader()
+    writer.writerows(build_csv_rows(a))
+    return buffer.getvalue()
+
+
 # --------------------------------------------------------------------------
 # Entry point
 # --------------------------------------------------------------------------
@@ -470,14 +531,28 @@ def generate_reports(folder, formats=("md", "html"), max_size=10, output_name=No
     recs = build_recommendations(analysis)
 
     for f, out in zip(formats, outputs):
-        content = render_markdown(root, analysis, recs) if f == "md" else render_html(root, analysis, recs)
-        out.write_text(content, encoding="utf-8")
+        if f == "csv":
+            # utf-8-sig adds a marker so Excel shows non-English names correctly;
+            # newline="" stops Windows from adding blank lines between rows
+            with open(out, "w", encoding="utf-8-sig", newline="") as fh:
+                fh.write(render_csv(analysis))
+        else:
+            content = render_markdown(root, analysis, recs) if f == "md" else render_html(root, analysis, recs)
+            out.write_text(content, encoding="utf-8")
     return analysis, recs, [out.resolve() for out in outputs]
+
+
+# What each --format option produces
+FORMAT_CHOICES = {
+    "md": ["md"], "html": ["html"], "csv": ["csv"],
+    "both": ["md", "html"],
+    "all": ["md", "html", "csv"],
+}
 
 
 def run_report(folder, fmt, output_name, max_size, stale_days=DEFAULT_STALE_DAYS):
     """Command-line version: scan one folder and print the results. Returns True on success."""
-    formats = ["md", "html"] if fmt == "both" else [fmt]
+    formats = FORMAT_CHOICES[fmt]
     try:
         print(f"\nScanning {Path(folder).expanduser().resolve()} ...")
         analysis, recs, outputs = generate_reports(folder, formats, max_size, output_name,
@@ -500,8 +575,8 @@ def main():
     parser = argparse.ArgumentParser(description="Scan a folder and generate a file inventory report.")
     parser.add_argument("folder", nargs="?",
                         help="Folder to scan. Leave it out to choose folders with a picker window.")
-    parser.add_argument("-f", "--format", choices=["md", "html", "both"], default="both",
-                        help="Report format (default: both)")
+    parser.add_argument("-f", "--format", choices=list(FORMAT_CHOICES), default="both",
+                        help="Report format: md, html, csv, both (md + html) or all (default: both)")
     parser.add_argument("-o", "--output", default=None,
                         help="Output file name without extension (default: reports/report_<folder>)")
     parser.add_argument("--max-size", type=float, default=10,

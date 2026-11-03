@@ -1,6 +1,7 @@
 #this file contains automated tests for organizer.py and create_sample_folder.py
 #run them with:  python -m pytest
 
+import csv
 import os
 import time
 from pathlib import Path
@@ -313,6 +314,79 @@ def test_new_checks_appear_in_reports_and_recommendations(tmp_path):
     assert "Naming problems" in html_text
     assert any("haven't been changed" in r for r in recs)
     assert any("confusing names" in r for r in recs)
+
+
+# --------------------------------------------------------------------------
+# CSV export
+# --------------------------------------------------------------------------
+
+def read_csv(path):
+    with open(path, encoding="utf-8-sig", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def test_csv_has_one_row_per_file_with_issues(tmp_path):
+    project = tmp_path / "project"
+    make(project, "images/logo.png", b"same")
+    make(project, "images/logo_copy.png", b"same")
+    make(project, "docs/empty.txt", b"")
+    make(project, "docs/notes.txt", b"fine")
+    _, _, paths = organizer.generate_reports(project, ["csv"], reports_dir=tmp_path / "reports")
+    rows = {r["path"]: r for r in read_csv(paths[0])}
+
+    assert list(rows) == ["docs/empty.txt", "docs/notes.txt", "images/logo.png", "images/logo_copy.png"]
+    assert rows["images/logo.png"]["duplicate_group"] == "1"
+    assert "Duplicate (group 1)" in rows["images/logo_copy.png"]["issues"]
+    assert "Looks like a copy" in rows["images/logo_copy.png"]["issues"]
+    assert rows["docs/empty.txt"]["issues"] == "Empty file"
+    assert rows["docs/notes.txt"]["issues"] == ""          # no problems
+    assert rows["docs/notes.txt"]["size_bytes"] == "4"     # raw number, so Excel can sort it
+
+
+def test_csv_has_header_and_excel_marker(tmp_path):
+    make(tmp_path / "project", "a.txt", "x")
+    _, _, paths = organizer.generate_reports(tmp_path / "project", ["csv"], reports_dir=tmp_path / "r")
+    raw = paths[0].read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbf")                  # utf-8-sig marker for Excel
+    assert raw.decode("utf-8-sig").splitlines()[0] == ",".join(organizer.CSV_COLUMNS)
+    assert b"\r\r\n" not in raw                              # no blank lines between rows
+
+
+def test_csv_handles_commas_and_non_english_names(tmp_path):
+    make(tmp_path / "project", "Smith, John.txt", "x")
+    make(tmp_path / "project", "رپورٹ.txt", "y")               # Urdu file name
+    _, _, paths = organizer.generate_reports(tmp_path / "project", ["csv"], reports_dir=tmp_path / "r")
+    names = sorted(r["name"] for r in read_csv(paths[0]))
+    assert names == ["Smith, John.txt", "رپورٹ.txt"]
+
+
+def test_csv_lists_skipped_folders(tmp_path, monkeypatch):
+    make(tmp_path / "project", "ok.txt")
+    make(tmp_path / "project", "private/secret.txt")
+    real_scandir = os.scandir
+
+    def fake_scandir(path="."):
+        if str(path).endswith("private"):
+            raise PermissionError(13, "Permission denied", str(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(os, "scandir", fake_scandir)
+    _, _, paths = organizer.generate_reports(tmp_path / "project", ["csv"], reports_dir=tmp_path / "r")
+    rows = {r["path"]: r for r in read_csv(paths[0])}
+    assert rows["private"]["category"] == "Folder"
+    assert rows["private"]["issues"].startswith("Skipped:")
+
+
+@pytest.mark.parametrize("choice, expected", [
+    ("both", [".md", ".html"]),
+    ("all", [".md", ".html", ".csv"]),
+    ("csv", [".csv"]),
+])
+def test_format_choices(tmp_path, choice, expected, capsys):
+    make(tmp_path / "project", "a.txt", "x")
+    out = tmp_path / "reports" / "r"
+    assert organizer.run_report(tmp_path / "project", choice, str(out), 10)
+    assert sorted(p.suffix for p in (tmp_path / "reports").iterdir()) == sorted(expected)
 
 
 # --------------------------------------------------------------------------

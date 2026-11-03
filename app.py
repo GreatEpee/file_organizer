@@ -41,12 +41,13 @@ class OrganizerApp:
         self.stale_days = tk.StringVar(value=str(organizer.DEFAULT_STALE_DAYS))
         self.want_html = tk.BooleanVar(value=True)
         self.want_md = tk.BooleanVar(value=True)
+        self.want_csv = tk.BooleanVar(value=True)
         self.status = tk.StringVar(value="Choose a folder to get started.")
         self.results = queue.Queue()   # the background scan puts its result here
         self.report_paths = []
 
         root.title("File & Asset Organizer")
-        root.geometry("940x680")
+        root.geometry("940x700")
         root.minsize(700, 540)
         self.build_ui()
 
@@ -68,20 +69,25 @@ class OrganizerApp:
         ttk.Entry(step1, textvariable=self.folder, state="readonly").pack(side="left", fill="x", expand=True)
         ttk.Button(step1, text="Browse...", command=self.choose_folder).pack(side="left", padx=(8, 0))
 
-        # Step 2: options
+        # Step 2: options (two rows so nothing gets cut off)
         step2 = ttk.LabelFrame(main, text=" 2. Options ", padding=10)
         step2.pack(fill="x", pady=10)
-        ttk.Label(step2, text="Flag files larger than").pack(side="left")
-        ttk.Spinbox(step2, from_=1, to=100000, width=7, textvariable=self.max_size).pack(side="left", padx=4)
-        ttk.Label(step2, text="MB").pack(side="left")
-        ttk.Separator(step2, orient="vertical").pack(side="left", fill="y", padx=16)
-        ttk.Label(step2, text="Stale after").pack(side="left")
-        ttk.Spinbox(step2, from_=1, to=10000, width=6, textvariable=self.stale_days).pack(side="left", padx=4)
-        ttk.Label(step2, text="days").pack(side="left")
-        ttk.Separator(step2, orient="vertical").pack(side="left", fill="y", padx=16)
-        ttk.Label(step2, text="Report format:").pack(side="left")
-        ttk.Checkbutton(step2, text="HTML", variable=self.want_html).pack(side="left", padx=4)
-        ttk.Checkbutton(step2, text="Markdown", variable=self.want_md).pack(side="left")
+        limits = ttk.Frame(step2)
+        limits.pack(fill="x")
+        ttk.Label(limits, text="Flag files larger than").pack(side="left")
+        ttk.Spinbox(limits, from_=1, to=100000, width=7, textvariable=self.max_size).pack(side="left", padx=4)
+        ttk.Label(limits, text="MB").pack(side="left")
+        ttk.Separator(limits, orient="vertical").pack(side="left", fill="y", padx=16)
+        ttk.Label(limits, text="Stale after").pack(side="left")
+        ttk.Spinbox(limits, from_=1, to=10000, width=6, textvariable=self.stale_days).pack(side="left", padx=4)
+        ttk.Label(limits, text="days").pack(side="left")
+
+        formats_row = ttk.Frame(step2)
+        formats_row.pack(fill="x", pady=(8, 0))
+        ttk.Label(formats_row, text="Report formats:").pack(side="left")
+        ttk.Checkbutton(formats_row, text="HTML", variable=self.want_html).pack(side="left", padx=4)
+        ttk.Checkbutton(formats_row, text="Markdown", variable=self.want_md).pack(side="left", padx=4)
+        ttk.Checkbutton(formats_row, text="CSV (Excel)", variable=self.want_csv).pack(side="left", padx=4)
 
         # Step 3: scan button, progress bar and status text
         step3 = ttk.Frame(main)
@@ -101,6 +107,9 @@ class OrganizerApp:
         self.open_md_btn = ttk.Button(actions, text="Open Markdown Report", state="disabled",
                                       command=lambda: self.open_report(".md"))
         self.open_md_btn.pack(side="left", padx=8)
+        self.open_csv_btn = ttk.Button(actions, text="Open CSV (Excel)", state="disabled",
+                                       command=lambda: self.open_report(".csv"))
+        self.open_csv_btn.pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Open Reports Folder", command=self.open_reports_folder).pack(side="left")
 
         # Results area
@@ -160,7 +169,8 @@ class OrganizerApp:
             self.status.set("Ready to scan.")
 
     def start_scan(self):
-        formats = [f for f, on in (("html", self.want_html.get()), ("md", self.want_md.get())) if on]
+        formats = [f for f, on in (("html", self.want_html.get()), ("md", self.want_md.get()),
+                                   ("csv", self.want_csv.get())) if on]
         if not formats:
             messagebox.showwarning("No report format", "Please tick at least one report format.")
             return
@@ -262,6 +272,7 @@ class OrganizerApp:
         has = {p.suffix for p in paths}
         self.open_html_btn.config(state="normal" if ".html" in has else "disabled")
         self.open_md_btn.config(state="normal" if ".md" in has else "disabled")
+        self.open_csv_btn.config(state="normal" if ".csv" in has else "disabled")
         self.status.set("Done! Report saved.")
 
     def set_recommendations(self, lines):
@@ -280,7 +291,7 @@ class OrganizerApp:
         try:
             open_path(path)
         except OSError:
-            # Windows has no default app for .md files, so fall back to Notepad
+            # No default program for this file type (common for .md), so fall back to Notepad
             if sys.platform.startswith("win"):
                 subprocess.Popen(["notepad", str(path)])
             else:

@@ -24,7 +24,8 @@ recommendations.
   - Confusing file names: copies (`logo_copy.png`, `Report (2).pdf`), messy versions
     (`final_FINAL_v2.docx`), leftover temporary files (`~$report.docx`, `.bak`), extra
     spaces and very long names
-- **Generates reports** in Markdown, HTML (supports light and dark mode), or both.
+- **Generates reports** in Markdown, HTML (supports light and dark mode) and CSV.
+  The CSV has one row per file with all its issues, ready to sort and filter in Excel.
 - **Desktop app** with buttons, a results table and one-click report opening,
   which can be packaged as a double-click `.exe`.
 - No external libraries needed. Uses only the Python standard library.
@@ -86,10 +87,25 @@ python organizer.py sample_project
 python organizer.py "D:\MyProject"
 ```
 
-Reports are saved as `reports/report_<folder name>.md` and `.html`, so scanning
-several folders never overwrites an earlier report.
+Reports are saved as `reports/report_<folder name>.md`, `.html` and `.csv`, so
+scanning several folders never overwrites an earlier report.
 
 > On Windows, use `py` instead of `python` if `python` is not recognized.
+
+## CSV Columns
+
+| Column | Meaning |
+|---|---|
+| `path` | Location inside the scanned folder |
+| `name`, `extension`, `category` | File name, its extension and its category |
+| `size_bytes` | Size as a plain number (use this column to sort by size) |
+| `size` | Size in readable form, like `11.4 MB` |
+| `last_modified` | Date and time the file was last changed |
+| `duplicate_group` | Files with the same number are identical copies |
+| `issues` | Every problem found for the file, separated by `;` (empty = no problems) |
+
+Files and folders that couldn't be read also get a row, with `Skipped:` and the reason
+in the `issues` column.
 
 ## Building the .exe (Windows)
 
@@ -112,7 +128,7 @@ signed. Click **More info → Run anyway**.
 | Option | Description | Default |
 |---|---|---|
 | `folder` | Folder to scan. Leave it out for interactive mode | — |
-| `-f`, `--format` | `md`, `html`, or `both` | `both` |
+| `-f`, `--format` | `md`, `html`, `csv`, `both` (md + html) or `all` | `both` |
 | `-o`, `--output` | Custom output file name without extension | `reports/report_<folder>` |
 | `--max-size` | Size limit in MB for the oversized check | `10` |
 | `--stale-days` | Flag files not modified for this many days | `365` |

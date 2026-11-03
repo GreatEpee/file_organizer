@@ -31,7 +31,18 @@ CATEGORIES = {
 # Asset types a typical project folder is expected to contain.
 EXPECTED_CATEGORIES = ["Images", "PDFs", "Documents", "Spreadsheets", "Presentations"]
 
-IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".idea", ".vscode"}
+# Organize mode moves removed files here (inside the scanned folder) so they can be restored
+BACKUP_DIR_NAME = "_organizer_backup"
+
+IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".idea", ".vscode",
+               BACKUP_DIR_NAME}
+
+# Types of files that shouldn't sit loose in the root folder
+LOOSE_CATEGORIES = {"Images", "Documents", "PDFs", "Spreadsheets", "Presentations", "Audio", "Video"}
+
+# Files that belong in the root of a project, so they are never called "loose" or moved
+KEEP_IN_ROOT = ("readme", "license", "licence", "changelog", "contributing", "code_of_conduct",
+                "security", "authors")
 IGNORE_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 
 # Files not modified for this many days are flagged as stale (can be changed)
@@ -90,6 +101,12 @@ def check_name(name):
     if len(name) > MAX_NAME_LENGTH:
         problems.append(f"Name over {MAX_NAME_LENGTH} characters long")
     return problems
+
+
+def is_loose(f):
+    """True if a file sits directly in the root folder but belongs in a sub-folder."""
+    return ("/" not in f["rel"] and f["category"] in LOOSE_CATEGORIES
+            and not f["name"].lower().startswith(KEEP_IN_ROOT))
 
 
 def describe_error(err):
@@ -230,8 +247,7 @@ def build_recommendations(a):
     if a["bad_names"]:
         recs.append(f"Rename {len(a['bad_names'])} file(s) with confusing names (copies, 'final_v2' "
                     "versions, temporary files) so everyone can tell which version is current.")
-    loose = [f for f in a["by_category"].get("Images", []) + a["by_category"].get("Documents", [])
-             if "/" not in f["rel"]]
+    loose = [f for f in a["files"] if is_loose(f)]
     if loose:
         recs.append(f"Move {len(loose)} loose file(s) from the root folder into sub-folders "
                     "(e.g. images/, docs/) to keep the project tidy.")
@@ -459,7 +475,7 @@ def build_csv_rows(a):
         if rel in stale:
             issues.append("Stale")
         issues += name_problems.get(rel, [])
-        if f["category"] in ("Images", "Documents") and "/" not in rel:
+        if is_loose(f):
             issues.append("Loose file in root folder")
         if rel in skipped:   # listed, but couldn't be opened for the duplicate check
             issues.append(skipped.pop(rel)["reason"])
@@ -583,7 +599,22 @@ def main():
                         help="Flag files larger than this many MB (default: 10)")
     parser.add_argument("--stale-days", type=int, default=DEFAULT_STALE_DAYS,
                         help=f"Flag files not modified for this many days (default: {DEFAULT_STALE_DAYS})")
+    parser.add_argument("--organize", action="store_true",
+                        help="Preview and apply fixes: remove duplicates and empty files, move loose files")
+    parser.add_argument("--undo", action="store_true",
+                        help="Undo the last organize on this folder")
     args = parser.parse_args()
+
+    # Organize mode and undo (imported here because organize.py itself imports this file)
+    if args.organize or args.undo:
+        if not args.folder:
+            sys.exit("Error: please give a folder, e.g.  python organizer.py sample_project --organize")
+        import organize
+        ok = organize.run_cli(args.folder, undo=args.undo, max_size=args.max_size,
+                              stale_days=args.stale_days)
+        if ok and args.organize:
+            run_report(args.folder, args.format, args.output, args.max_size, args.stale_days)
+        sys.exit(0 if ok else 1)
 
     # Folder given on the command line: scan it once and stop
     if args.folder:

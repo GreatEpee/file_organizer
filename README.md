@@ -26,6 +26,9 @@ recommendations.
     spaces and very long names
 - **Generates reports** in Markdown, HTML (supports light and dark mode) and CSV.
   The CSV has one row per file with all its issues, ready to sort and filter in Excel.
+- **Organize mode** that fixes problems for you: removes duplicate copies, removes empty
+  files and moves loose files into folders. It shows a preview first, never deletes
+  anything permanently, and can undo everything.
 - **Desktop app** with buttons, a results table and one-click report opening,
   which can be packaged as a double-click `.exe`.
 - No external libraries needed. Uses only the Python standard library.
@@ -39,9 +42,11 @@ recommendations.
 ```
 file-organizer/
 ├── organizer.py              # scanning, analysis and report logic (command line)
+├── organize.py               # organize mode: plan, apply and undo fixes
 ├── app.py                    # desktop app (window with buttons)
 ├── tests/
-│   └── test_organizer.py     # automated tests (pytest)
+│   ├── test_organizer.py     # tests for scanning, checks and reports
+│   └── test_organize.py      # tests for organize mode and undo
 ├── pytest.ini                # pytest settings
 ├── requirements-dev.txt      # tools needed for development (pytest)
 ├── create_sample_folder.py   # builds a test folder with mixed files
@@ -92,6 +97,35 @@ scanning several folders never overwrites an earlier report.
 
 > On Windows, use `py` instead of `python` if `python` is not recognized.
 
+## Organize Mode
+
+Organize mode fixes three kinds of problems:
+
+| Fix | What happens |
+|---|---|
+| Remove duplicate copies | Keeps one copy (the one with the cleanest name and shortest path) and moves the others to the backup folder |
+| Remove empty files | Moves 0-byte files to the backup folder |
+| Move loose files | Moves images, documents, spreadsheets and similar files from the root folder into `images/`, `docs/`, `data/` and so on |
+
+**Safety rules**
+- **Nothing is deleted permanently.** Removed files are moved into an `_organizer_backup`
+  folder inside the scanned folder. Delete that folder yourself once you're happy.
+- **Preview first.** Every change is listed before anything happens, and you must confirm.
+- **Checked again right before acting.** If a file was edited, deleted or changed after the
+  scan, that change is skipped.
+- **Never overwrites.** If the destination already exists, `_1`, `_2` ... is added to the name.
+- **Project files stay put.** `README`, `LICENSE`, `CHANGELOG` and similar files are never moved.
+- **Undo** puts every file back where it was. Each organize can be undone in turn, newest first.
+
+**In the desktop app:** scan a folder, click **Organize...**, choose the fixes, check the
+preview and click **Apply**. Use **Undo Last Organize** to put everything back.
+
+**On the command line:**
+```bash
+python organizer.py sample_project --organize   # preview, then asks before applying
+python organizer.py sample_project --undo       # undo the last organize
+```
+
 ## CSV Columns
 
 | Column | Meaning |
@@ -132,6 +166,8 @@ signed. Click **More info → Run anyway**.
 | `-o`, `--output` | Custom output file name without extension | `reports/report_<folder>` |
 | `--max-size` | Size limit in MB for the oversized check | `10` |
 | `--stale-days` | Flag files not modified for this many days | `365` |
+| `--organize` | Preview and apply fixes (asks before changing anything) | — |
+| `--undo` | Undo the last organize on the folder | — |
 
 Example:
 ```bash

@@ -38,6 +38,7 @@ class OrganizerApp:
         self.root = root
         self.folder = tk.StringVar()
         self.max_size = tk.StringVar(value="10")
+        self.stale_days = tk.StringVar(value=str(organizer.DEFAULT_STALE_DAYS))
         self.want_html = tk.BooleanVar(value=True)
         self.want_md = tk.BooleanVar(value=True)
         self.status = tk.StringVar(value="Choose a folder to get started.")
@@ -45,7 +46,7 @@ class OrganizerApp:
         self.report_paths = []
 
         root.title("File & Asset Organizer")
-        root.geometry("860x660")
+        root.geometry("940x680")
         root.minsize(700, 540)
         self.build_ui()
 
@@ -73,6 +74,10 @@ class OrganizerApp:
         ttk.Label(step2, text="Flag files larger than").pack(side="left")
         ttk.Spinbox(step2, from_=1, to=100000, width=7, textvariable=self.max_size).pack(side="left", padx=4)
         ttk.Label(step2, text="MB").pack(side="left")
+        ttk.Separator(step2, orient="vertical").pack(side="left", fill="y", padx=16)
+        ttk.Label(step2, text="Stale after").pack(side="left")
+        ttk.Spinbox(step2, from_=1, to=10000, width=6, textvariable=self.stale_days).pack(side="left", padx=4)
+        ttk.Label(step2, text="days").pack(side="left")
         ttk.Separator(step2, orient="vertical").pack(side="left", fill="y", padx=16)
         ttk.Label(step2, text="Report format:").pack(side="left")
         ttk.Checkbutton(step2, text="HTML", variable=self.want_html).pack(side="left", padx=4)
@@ -106,9 +111,9 @@ class OrganizerApp:
         stats_row = ttk.Frame(results)
         stats_row.pack(fill="x")
         self.stat_labels = {}
-        for i, name in enumerate(["Files scanned", "Total size", "Duplicate groups",
-                                  "Oversized", "Empty", "Skipped"]):
-            box = ttk.Frame(stats_row, padding=(0, 0, 22, 0))
+        for i, name in enumerate(["Files scanned", "Total size", "Duplicate groups", "Oversized",
+                                  "Empty", "Stale", "Bad names", "Skipped"]):
+            box = ttk.Frame(stats_row, padding=(0, 0, 20, 0))
             box.grid(row=0, column=i, sticky="w")
             value = ttk.Label(box, text="-", font=("Segoe UI", 14, "bold"))
             value.pack(anchor="w")
@@ -166,17 +171,25 @@ class OrganizerApp:
         except ValueError:
             messagebox.showwarning("Invalid size", "Please enter a size limit greater than 0.")
             return
+        try:
+            stale_days = int(self.stale_days.get())
+            if stale_days <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showwarning("Invalid days", "Please enter a whole number of days greater than 0.")
+            return
 
         self.set_busy(True)
         # Scan in a background thread so the window doesn't freeze on big folders
-        threading.Thread(target=self.scan_worker, args=(self.folder.get(), formats, max_size),
+        threading.Thread(target=self.scan_worker, args=(self.folder.get(), formats, max_size, stale_days),
                          daemon=True).start()
         self.root.after(100, self.check_results)
 
-    def scan_worker(self, folder, formats, max_size):
+    def scan_worker(self, folder, formats, max_size, stale_days):
         """Runs in the background thread. Never touches the window directly."""
         try:
-            result = organizer.generate_reports(folder, formats, max_size, reports_dir=REPORTS_DIR)
+            result = organizer.generate_reports(folder, formats, max_size, reports_dir=REPORTS_DIR,
+                                                stale_days=stale_days)
             self.results.put(("ok", result))
         except Exception as err:
             self.results.put(("error", err))
@@ -214,6 +227,8 @@ class OrganizerApp:
             "Duplicate groups": (len(a["duplicates"]), len(a["duplicates"])),
             "Oversized": (len(a["oversized"]), len(a["oversized"])),
             "Empty": (len(a["empty"]), len(a["empty"])),
+            "Stale": (len(a["stale"]), len(a["stale"])),
+            "Bad names": (len(a["bad_names"]), len(a["bad_names"])),
             "Skipped": (len(a["skipped"]), len(a["skipped"])),
         }
         for name, (text, problems) in counts.items():
@@ -229,15 +244,18 @@ class OrganizerApp:
         rows += [("Oversized", f["rel"], human(f["size"])) for f in a["oversized"]]
         rows += [("Empty file", f["rel"], "0 bytes") for f in a["empty"]]
         rows += [("Unknown type", f["rel"], f"Extension: {f['ext']}") for f in a["unknown"]]
+        rows += [("Stale", f["rel"], f"Last modified {f['modified']:%Y-%m-%d}") for f in a["stale"]]
+        rows += [("Bad name", f["rel"], "; ".join(f["problems"])) for f in a["bad_names"]]
         rows += [("Missing type", c, "No files of this type found") for c in a["missing"]]
         rows += [("Skipped", x["rel"], x["reason"]) for x in a["skipped"]]
+        issue_count = len(rows)
         if not rows:
             rows.append(("No issues", "-", "The folder looks well organized"))
         for row in rows:
             self.table.insert("", "end", values=row)
 
         self.set_recommendations([f"\u2022 {r}" for r in recs])
-        self.tabs.tab(0, text=f"Issues ({len(a['duplicates']) + len(a['oversized']) + len(a['empty']) + len(a['unknown']) + len(a['missing']) + len(a['skipped'])})")
+        self.tabs.tab(0, text=f"Issues ({issue_count})")
         self.tabs.tab(1, text=f"Recommendations ({len(recs)})")
 
         self.report_paths = paths

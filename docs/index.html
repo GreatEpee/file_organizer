@@ -23,7 +23,7 @@ code { font-family:ui-monospace,Consolas,monospace; font-size:.88em; }
 li { margin:4px 0; } .none { color:var(--ok); }
 </style></head><body><main>
 <h1>File &amp; Asset Inventory Report</h1>
-<div class='meta'>Folder: <code>D:\file_organizer\sample_project</code> &middot; Generated 2026-11-03 17:40</div>
+<div class='meta'>Folder: <code>D:\file_organizer\sample_project</code> &middot; Generated 2026-11-03 19:01</div>
 <div class='cards'>
 <div class="card "><div class="n">17</div><div class="l">Files scanned</div></div>
 <div class="card "><div class="n">12.1 MB</div><div class="l">Total size</div></div>
@@ -32,6 +32,8 @@ li { margin:4px 0; } .none { color:var(--ok); }
 <div class="card warn"><div class="n">1</div><div class="l">Oversized (&gt; 10 MB)</div></div>
 <div class="card warn"><div class="n">1</div><div class="l">Empty files</div></div>
 <div class="card ok"><div class="n">0</div><div class="l">Skipped (unreadable)</div></div>
+<div class="card warn"><div class="n">2</div><div class="l">Stale (&gt; 365 days)</div></div>
+<div class="card warn"><div class="n">3</div><div class="l">Naming problems</div></div>
 </div>
 <h2>Files by Category</h2><div class='table-wrap'><table><tr><th>Category</th><th class='r'>Files</th><th class='r'>Size</th><th>Share</th></tr>
 <tr><td>Images</td><td class='r'>5</td><td class='r'>12.1 MB</td><td><div class='bar' style='width:29%'></div> 29%</td></tr>
@@ -52,39 +54,43 @@ li { margin:4px 0; } .none { color:var(--ok); }
 <ul><li><code>misc/LICENSE</code> (extension: (none))</li><li><code>misc/export.dat</code> (extension: .dat)</li></ul>
 <h3>Missing Common Asset Types</h3>
 <ul><li>Presentations</li></ul>
+<h3>Stale Files</h3>
+<ul><li><code>misc/old_assets.zip</code> (last modified 2023-11-04, 1095 days ago)</li><li><code>data/budget.csv</code> (last modified 2024-11-03, 730 days ago)</li></ul>
+<h3>Naming Problems</h3>
+<ul><li><code>Screenshot (2).png</code>: Looks like a copy</li><li><code>docs/proposal_final_FINAL_v2.docx</code>: Messy version name (like final_v2)</li><li><code>images/logo_copy.png</code>: Looks like a copy</li></ul>
 <h3>Skipped Files</h3>
 <p class="none">None found</p>
-<h2>Recommendations</h2><ol><li>Remove duplicate copies: 2 group(s) of identical files are wasting 1.2 KB. Keep one copy of each.</li><li>Compress or archive 1 file(s) larger than 10 MB (e.g. resize images, export lighter PDFs, or move raw files to cloud storage).</li><li>Delete or fill in 1 empty file(s); they are usually leftovers.</li><li>Check whether these common asset types should exist in the project: Presentations.</li><li>Review 2 file(s) with unknown or missing extensions and rename or remove them.</li><li>Move 1 loose file(s) from the root folder into sub-folders (e.g. images/, docs/) to keep the project tidy.</li></ol>
+<h2>Recommendations</h2><ol><li>Remove duplicate copies: 2 group(s) of identical files are wasting 1.2 KB. Keep one copy of each.</li><li>Compress or archive 1 file(s) larger than 10 MB (e.g. resize images, export lighter PDFs, or move raw files to cloud storage).</li><li>Delete or fill in 1 empty file(s); they are usually leftovers.</li><li>Check whether these common asset types should exist in the project: Presentations.</li><li>Review 2 file(s) with unknown or missing extensions and rename or remove them.</li><li>Archive or delete 2 file(s) that haven&#x27;t been changed in over 365 days, if they are no longer needed.</li><li>Rename 3 file(s) with confusing names (copies, &#x27;final_v2&#x27; versions, temporary files) so everyone can tell which version is current.</li><li>Move 1 loose file(s) from the root folder into sub-folders (e.g. images/, docs/) to keep the project tidy.</li></ol>
 <h2>Full Inventory</h2>
 <h3>Images (5)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>screenshot.png</code></td><td>.png</td><td class='r'>1020 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>images/banner.jpg</code></td><td>.jpg</td><td class='r'>653 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>images/hero_raw.png</code></td><td>.png</td><td class='r'>12.1 MB</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>images/logo.png</code></td><td>.png</td><td class='r'>659 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>images/logo_copy.png</code></td><td>.png</td><td class='r'>659 B</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>Screenshot (2).png</code></td><td>.png</td><td class='r'>1020 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>images/banner.jpg</code></td><td>.jpg</td><td class='r'>653 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>images/hero_raw.png</code></td><td>.png</td><td class='r'>12.1 MB</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>images/logo.png</code></td><td>.png</td><td class='r'>659 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>images/logo_copy.png</code></td><td>.png</td><td class='r'>659 B</td><td>2026-11-03 18:58</td></tr>
 </table></div>
 <h3>Documents (4)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>docs/empty_draft.txt</code></td><td>.txt</td><td class='r'>0 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>docs/meeting_notes.md</code></td><td>.md</td><td class='r'>65 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>docs/project_brief.txt</code></td><td>.txt</td><td class='r'>51 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>docs/proposal.docx</code></td><td>.docx</td><td class='r'>974 B</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>docs/empty_draft.txt</code></td><td>.txt</td><td class='r'>0 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>docs/meeting_notes.md</code></td><td>.md</td><td class='r'>65 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>docs/project_brief.txt</code></td><td>.txt</td><td class='r'>51 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>docs/proposal_final_FINAL_v2.docx</code></td><td>.docx</td><td class='r'>974 B</td><td>2026-11-03 18:58</td></tr>
 </table></div>
 <h3>Spreadsheets (2)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>data/budget.csv</code></td><td>.csv</td><td class='r'>41 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>data/sales_2026.xlsx</code></td><td>.xlsx</td><td class='r'>1.6 KB</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>data/budget.csv</code></td><td>.csv</td><td class='r'>41 B</td><td>2024-11-03 18:58</td></tr>
+<tr><td><code>data/sales_2026.xlsx</code></td><td>.xlsx</td><td class='r'>1.6 KB</td><td>2026-11-03 18:58</td></tr>
 </table></div>
 <h3>PDFs (2)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>docs/contract.pdf</code></td><td>.pdf</td><td class='r'>600 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>docs/contract_final.pdf</code></td><td>.pdf</td><td class='r'>600 B</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>docs/contract.pdf</code></td><td>.pdf</td><td class='r'>600 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>docs/contract_final.pdf</code></td><td>.pdf</td><td class='r'>600 B</td><td>2026-11-03 18:58</td></tr>
 </table></div>
 <h3>Other (2)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>misc/LICENSE</code></td><td>(none)</td><td class='r'>12 B</td><td>2026-11-03 01:58</td></tr>
-<tr><td><code>misc/export.dat</code></td><td>.dat</td><td class='r'>50 B</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>misc/LICENSE</code></td><td>(none)</td><td class='r'>12 B</td><td>2026-11-03 18:58</td></tr>
+<tr><td><code>misc/export.dat</code></td><td>.dat</td><td class='r'>50 B</td><td>2026-11-03 18:58</td></tr>
 </table></div>
 <h3>Archives (1)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>misc/old_assets.zip</code></td><td>.zip</td><td class='r'>487 B</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>misc/old_assets.zip</code></td><td>.zip</td><td class='r'>487 B</td><td>2023-11-04 18:58</td></tr>
 </table></div>
 <h3>Code (1)</h3><div class='table-wrap'><table><tr><th>File</th><th>Type</th><th class='r'>Size</th><th>Last Modified</th></tr>
-<tr><td><code>scripts/build.py</code></td><td>.py</td><td class='r'>29 B</td><td>2026-11-03 01:58</td></tr>
+<tr><td><code>scripts/build.py</code></td><td>.py</td><td class='r'>29 B</td><td>2026-11-03 18:58</td></tr>
 </table></div>
 </main></body></html>

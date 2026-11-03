@@ -2,6 +2,7 @@
 #run them with:  python -m pytest
 
 import os
+import time
 from pathlib import Path
 
 import pytest
@@ -246,6 +247,75 @@ def test_html_report_escapes_special_characters(tmp_path):
 
 
 # --------------------------------------------------------------------------
+# Extra checks: bad file names and stale files
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("name", [
+    "logo_copy.png",
+    "Copy of report.docx",
+    "photo - Copy.jpg",            # how Windows names copied files
+    "Screenshot (2).png",
+    "proposal_final_FINAL.docx",
+    "proposal_final_v2.docx",
+    "budget-final-new.xlsx",
+    "~$report.docx",               # Office leaves these lock files behind
+    "data.bak",
+    "notes  draft.txt",            # double space
+    " leading space.txt",
+    "a" * 101 + ".txt",            # very long name
+])
+def test_bad_names_are_flagged(name):
+    assert organizer.check_name(name) != []
+
+
+@pytest.mark.parametrize("name", [
+    "logo.png",
+    "final_report.pdf",            # one "final" alone is fine
+    "copywriting_guide.docx",      # "copy" inside a longer word is fine
+    "budget_2026.xlsx",
+    "v2_roadmap.md",               # a version number without "final" is fine
+    "meeting notes.txt",
+])
+def test_good_names_are_not_flagged(name):
+    assert organizer.check_name(name) == []
+
+
+def test_name_can_have_several_problems():
+    problems = organizer.check_name("Copy of proposal_final_v2  .docx")
+    assert len(problems) == 3   # copy + messy version + extra spaces
+
+
+def set_age(path, days):
+    old = time.time() - days * 24 * 60 * 60
+    os.utime(path, (old, old))
+
+
+def test_stale_files_use_the_day_limit(tmp_path):
+    set_age(make(tmp_path, "ancient.txt"), 400)
+    set_age(make(tmp_path, "recent.txt"), 30)
+    make(tmp_path, "today.txt")
+    files, skipped = organizer.scan_folder(tmp_path)
+    a = organizer.analyze(files, skipped, 10, stale_days=365)
+    assert [f["rel"] for f in a["stale"]] == ["ancient.txt"]
+    a = organizer.analyze(files, skipped, 10, stale_days=7)   # stricter limit
+    assert [f["rel"] for f in a["stale"]] == ["ancient.txt", "recent.txt"]   # oldest first
+
+
+def test_new_checks_appear_in_reports_and_recommendations(tmp_path):
+    project = tmp_path / "project"
+    set_age(make(project, "old_notes.txt", "a"), 500)
+    make(project, "plan_final_v2.docx", "b")
+    analysis, recs, paths = organizer.generate_reports(project, ["md", "html"],
+                                                       reports_dir=tmp_path / "reports")
+    md, html_text = (p.read_text(encoding="utf-8") for p in paths)
+    assert "### Stale Files" in md and "old_notes.txt" in md
+    assert "### Naming Problems" in md and "plan_final_v2.docx" in md
+    assert "Naming problems" in html_text
+    assert any("haven't been changed" in r for r in recs)
+    assert any("confusing names" in r for r in recs)
+
+
+# --------------------------------------------------------------------------
 # End-to-end: the sample folder gives the expected results
 # --------------------------------------------------------------------------
 
@@ -261,3 +331,6 @@ def test_sample_folder_results(tmp_path, monkeypatch, capsys):
     assert [f["rel"] for f in a["empty"]] == ["docs/empty_draft.txt"]
     assert a["missing"] == ["Presentations"]
     assert a["skipped"] == []
+    assert sorted(f["rel"] for f in a["stale"]) == ["data/budget.csv", "misc/old_assets.zip"]
+    assert sorted(f["rel"] for f in a["bad_names"]) == [
+        "Screenshot (2).png", "docs/proposal_final_FINAL_v2.docx", "images/logo_copy.png"]

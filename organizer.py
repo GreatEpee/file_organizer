@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Configuration
@@ -31,6 +31,15 @@ EXPECTED_CATEGORIES = ["Images", "PDFs", "Documents", "Spreadsheets", "Presentat
 
 IGNORE_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".idea", ".vscode"}
 IGNORE_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
+
+# Files not modified for this many days are flagged as stale (can be changed)
+DEFAULT_STALE_DAYS = 365
+
+# Names longer than this are hard to read and can break on some systems
+MAX_NAME_LENGTH = 100
+
+# Words that, together with "final", show a messy versioning habit (e.g. final_v2, final_new)
+VERSION_WORDS = {"new", "latest", "updated", "revised", "old"}
 
 # Build a quick lookup: extension -> category
 EXT_TO_CATEGORY = {ext: cat for cat, exts in CATEGORIES.items() for ext in exts}
@@ -59,6 +68,26 @@ def file_hash(path, chunk_size=1024 * 1024):
         while chunk := f.read(chunk_size):
             sha.update(chunk)
     return sha.hexdigest()
+
+
+def check_name(name):
+    """Return a list of problems with a file name (an empty list means the name is fine)."""
+    problems = []
+    stem = Path(name).stem
+    words = [w for w in re.split(r"[\s_\-.()]+", stem.lower()) if w]   # "final_FINAL_v2" -> final, final, v2
+
+    if "copy" in words or re.search(r"\(\d+\)\s*$", stem):
+        problems.append("Looks like a copy")
+    if words.count("final") >= 2 or ("final" in words and any(
+            w in VERSION_WORDS or re.fullmatch(r"v\d+", w) for w in words)):
+        problems.append("Messy version name (like final_v2)")
+    if name.startswith("~$") or Path(name).suffix.lower() in {".tmp", ".bak"}:
+        problems.append("Temporary or backup file")
+    if name != name.strip() or "  " in name:
+        problems.append("Extra spaces in the name")
+    if len(name) > MAX_NAME_LENGTH:
+        problems.append(f"Name over {MAX_NAME_LENGTH} characters long")
+    return problems
 
 
 def describe_error(err):
@@ -141,13 +170,14 @@ def find_duplicates(files):
     return [group for group in by_hash.values() if len(group) > 1], skipped
 
 
-def analyze(files, skipped, max_size_mb):
+def analyze(files, skipped, max_size_mb, stale_days=DEFAULT_STALE_DAYS):
     """Compute stats and issues from the scanned file list."""
     by_category = defaultdict(list)
     for f in files:
         by_category[f["category"]].append(f)
 
     max_bytes = max_size_mb * 1024 * 1024
+    stale_cutoff = datetime.now() - timedelta(days=stale_days)
     duplicates, hash_skipped = find_duplicates(files)
     wasted = sum(g[0]["size"] * (len(g) - 1) for g in duplicates)
 
@@ -163,6 +193,9 @@ def analyze(files, skipped, max_size_mb):
         "unknown": by_category.get("Other", []),
         "largest": sorted(files, key=lambda f: -f["size"])[:5],
         "skipped": skipped + hash_skipped,
+        "stale": sorted([f for f in files if f["modified"] < stale_cutoff], key=lambda f: f["modified"]),
+        "bad_names": [{**f, "problems": check_name(f["name"])} for f in files if check_name(f["name"])],
+        "stale_days": stale_days,
         "max_size_mb": max_size_mb,
     }
 
@@ -188,6 +221,12 @@ def build_recommendations(a):
     if a["unknown"]:
         recs.append(f"Review {len(a['unknown'])} file(s) with unknown or missing extensions "
                     "and rename or remove them.")
+    if a["stale"]:
+        recs.append(f"Archive or delete {len(a['stale'])} file(s) that haven't been changed in over "
+                    f"{a['stale_days']} days, if they are no longer needed.")
+    if a["bad_names"]:
+        recs.append(f"Rename {len(a['bad_names'])} file(s) with confusing names (copies, 'final_v2' "
+                    "versions, temporary files) so everyone can tell which version is current.")
     loose = [f for f in a["by_category"].get("Images", []) + a["by_category"].get("Documents", [])
              if "/" not in f["rel"]]
     if loose:
@@ -222,6 +261,8 @@ def render_markdown(root, a, recs):
     add(f"| Oversized files (> {a['max_size_mb']:g} MB) | {len(a['oversized'])} |")
     add(f"| Empty files | {len(a['empty'])} |")
     add(f"| Skipped (unreadable) | {len(a['skipped'])} |")
+    add(f"| Stale files (> {a['stale_days']} days old) | {len(a['stale'])} |")
+    add(f"| Naming problems | {len(a['bad_names'])} |")
     add(f"| Missing asset types | {', '.join(a['missing']) or 'None'} |\n")
 
     add("## Files by Category\n")
@@ -251,6 +292,11 @@ def render_markdown(root, a, recs):
     add("\n".join(f"- `{f['rel']}` (extension: {f['ext']})" for f in a["unknown"]) or "- None found")
     add("\n### Missing Common Asset Types")
     add("\n".join(f"- {c}" for c in a["missing"]) or "- None, all expected types are present")
+    add("\n### Stale Files")
+    add("\n".join(f"- `{f['rel']}` (last modified {f['modified']:%Y-%m-%d}, "
+                  f"{(datetime.now() - f['modified']).days} days ago)" for f in a["stale"]) or "- None found")
+    add("\n### Naming Problems")
+    add("\n".join(f"- `{f['rel']}`: {'; '.join(f['problems'])}" for f in a["bad_names"]) or "- None found")
     add("\n### Skipped Files")
     add("\n".join(f"- `{x['rel']}` ({x['kind']}): {x['reason']}" for x in a["skipped"])
         or "- None, every file was read successfully")
@@ -334,6 +380,8 @@ def render_html(root, a, recs):
     card(f"Oversized (> {a['max_size_mb']:g} MB)", len(a["oversized"]), "warn" if a["oversized"] else "ok")
     card("Empty files", len(a["empty"]), "warn" if a["empty"] else "ok")
     card("Skipped (unreadable)", len(a["skipped"]), "warn" if a["skipped"] else "ok")
+    card(f"Stale (> {a['stale_days']} days)", len(a["stale"]), "warn" if a["stale"] else "ok")
+    card("Naming problems", len(a["bad_names"]), "warn" if a["bad_names"] else "ok")
     add("</div>")
 
     add("<h2>Files by Category</h2><div class='table-wrap'><table>"
@@ -356,6 +404,11 @@ def render_html(root, a, recs):
     add(file_list(a["unknown"], lambda f: f"<code>{e(f['rel'])}</code> (extension: {e(f['ext'])})"))
     add("<h3>Missing Common Asset Types</h3>")
     add(file_list(a["missing"], e))
+    add("<h3>Stale Files</h3>")
+    add(file_list(a["stale"], lambda f: f"<code>{e(f['rel'])}</code> (last modified "
+                  f"{f['modified']:%Y-%m-%d}, {(datetime.now() - f['modified']).days} days ago)"))
+    add("<h3>Naming Problems</h3>")
+    add(file_list(a["bad_names"], lambda f: f"<code>{e(f['rel'])}</code>: {e('; '.join(f['problems']))}"))
     add("<h3>Skipped Files</h3>")
     add(file_list(a["skipped"], lambda x: f"<code>{e(x['rel'])}</code> ({e(x['kind'])}): {e(x['reason'])}"))
 
@@ -398,7 +451,7 @@ def pick_folder():
 
 
 def generate_reports(folder, formats=("md", "html"), max_size=10, output_name=None,
-                     reports_dir=REPORTS_DIR):
+                     reports_dir=REPORTS_DIR, stale_days=DEFAULT_STALE_DAYS):
     """Scan one folder and write its report(s). Shared by the command line and the desktop app.
     Returns (analysis, recommendations, report_paths). Raises NotADirectoryError for a bad folder."""
     root = Path(folder).expanduser().resolve()
@@ -413,7 +466,7 @@ def generate_reports(folder, formats=("md", "html"), max_size=10, output_name=No
     outputs = [Path(f"{output_name}.{f}") for f in formats]
 
     files, skipped = scan_folder(root, skip_paths=outputs)  # don't count our own report
-    analysis = analyze(files, skipped, max_size)
+    analysis = analyze(files, skipped, max_size, stale_days)
     recs = build_recommendations(analysis)
 
     for f, out in zip(formats, outputs):
@@ -422,12 +475,13 @@ def generate_reports(folder, formats=("md", "html"), max_size=10, output_name=No
     return analysis, recs, [out.resolve() for out in outputs]
 
 
-def run_report(folder, fmt, output_name, max_size):
+def run_report(folder, fmt, output_name, max_size, stale_days=DEFAULT_STALE_DAYS):
     """Command-line version: scan one folder and print the results. Returns True on success."""
     formats = ["md", "html"] if fmt == "both" else [fmt]
     try:
         print(f"\nScanning {Path(folder).expanduser().resolve()} ...")
-        analysis, recs, outputs = generate_reports(folder, formats, max_size, output_name)
+        analysis, recs, outputs = generate_reports(folder, formats, max_size, output_name,
+                                                   stale_days=stale_days)
     except NotADirectoryError as err:
         print(f"Error: {err}")
         return False
@@ -436,7 +490,8 @@ def run_report(folder, fmt, output_name, max_size):
         print(f"Report written: {out}")
     print(f"\n{analysis['total_files']} files, {human_size(analysis['total_size'])} | "
           f"{len(analysis['duplicates'])} duplicate group(s), {len(analysis['oversized'])} oversized, "
-          f"{len(analysis['empty'])} empty, {len(analysis['skipped'])} skipped, missing: "
+          f"{len(analysis['empty'])} empty, {len(analysis['stale'])} stale, "
+          f"{len(analysis['bad_names'])} bad names, {len(analysis['skipped'])} skipped, missing: "
           f"{', '.join(analysis['missing']) or 'none'}")
     return True
 
@@ -451,11 +506,13 @@ def main():
                         help="Output file name without extension (default: reports/report_<folder>)")
     parser.add_argument("--max-size", type=float, default=10,
                         help="Flag files larger than this many MB (default: 10)")
+    parser.add_argument("--stale-days", type=int, default=DEFAULT_STALE_DAYS,
+                        help=f"Flag files not modified for this many days (default: {DEFAULT_STALE_DAYS})")
     args = parser.parse_args()
 
     # Folder given on the command line: scan it once and stop
     if args.folder:
-        ok = run_report(args.folder, args.format, args.output, args.max_size)
+        ok = run_report(args.folder, args.format, args.output, args.max_size, args.stale_days)
         sys.exit(0 if ok else 1)
 
     # No folder given: interactive mode, scan as many folders as the user wants
@@ -466,7 +523,7 @@ def main():
         if not folder:
             print("No folder selected. Goodbye!")
             break
-        run_report(folder, args.format, args.output, args.max_size)
+        run_report(folder, args.format, args.output, args.max_size, args.stale_days)
         again = input("\nScan another folder? (y/n): ").strip().lower()
         if again not in ("y", "yes"):
             print("Goodbye!")

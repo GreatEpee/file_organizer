@@ -20,6 +20,10 @@ recommendations.
   - Loose files sitting in the root folder
   - Unreadable files and folders (no permission, locked, broken links), listed in a
     "Skipped Files" section instead of being silently ignored
+  - Stale files that haven't been modified in a long time (default 365 days, configurable)
+  - Confusing file names: copies (`logo_copy.png`, `Report (2).pdf`), messy versions
+    (`final_FINAL_v2.docx`), leftover temporary files (`~$report.docx`, `.bak`), extra
+    spaces and very long names
 - **Generates reports** in Markdown, HTML (supports light and dark mode), or both.
 - **Desktop app** with buttons, a results table and one-click report opening,
   which can be packaged as a double-click `.exe`.
@@ -111,6 +115,7 @@ signed. Click **More info → Run anyway**.
 | `-f`, `--format` | `md`, `html`, or `both` | `both` |
 | `-o`, `--output` | Custom output file name without extension | `reports/report_<folder>` |
 | `--max-size` | Size limit in MB for the oversized check | `10` |
+| `--stale-days` | Flag files not modified for this many days | `365` |
 
 Example:
 ```bash
@@ -132,7 +137,9 @@ picker window (or run `python organizer.py sample_project`).
 | Empty file | `docs/empty_draft.txt` |
 | Unknown types | `misc/LICENSE`, `misc/export.dat` |
 | Missing asset type | No presentations included |
-| Loose root file | `screenshot.png` |
+| Loose root file | `Screenshot (2).png` |
+| Stale files | `data/budget.csv` (2 years old), `misc/old_assets.zip` (3 years old) |
+| Bad file names | `images/logo_copy.png`, `Screenshot (2).png`, `docs/proposal_final_FINAL_v2.docx` |
 
 ## Running the Tests
 
@@ -150,4 +157,5 @@ All tests should pass. Add `-v` to see each test by name.
 Edit the configuration section at the top of `organizer.py`:
 - `CATEGORIES` to add file extensions or new categories
 - `EXPECTED_CATEGORIES` to change which asset types are checked as "missing"
+- `DEFAULT_STALE_DAYS`, `MAX_NAME_LENGTH` and `VERSION_WORDS` to tune the stale and naming checks
 - `IGNORE_DIRS` / `IGNORE_FILES` to skip folders like `.git` or `node_modules`
